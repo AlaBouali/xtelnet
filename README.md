@@ -12,7 +12,7 @@ pip3 install xtelnet
 # Usage on a script :
 
 import xtelnet
-<br>t=telneter.session()
+<br>t=xtelnet.session()
 <br>ip='192.168.0.32'#just an example
 <br>t.login(ip, username='root',password='toor',p=23,timeout=5)
 <br>output1=t.execute('echo ala_is_king')
