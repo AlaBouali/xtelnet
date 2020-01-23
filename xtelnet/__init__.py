@@ -79,7 +79,7 @@ class session:
     if cmd.strip()!='':
      self.telnet.write("{} {}".format(cmd.strip(),new_line).encode('utf-8'))#send the command
      x=str(self.prompt)
-     c=self.telnet.read_until(b"{}".format(self.prompt),timeout=timeout)#read data until it receive the end of the prompt after executing the command
+     c=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout)#read data until it receive the end of the prompt after executing the command
      if "---- More ----" in str(c):
          while True:
              self.telnet.write("\n".format(cmd.strip(),new_line).encode('utf-8'))
