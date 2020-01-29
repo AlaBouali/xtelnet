@@ -23,7 +23,7 @@ import xtelnet
 
 
 
-To start a manual interactive session after login, just do:
+<h4>To start a manual interactive session after login, just do:</h4>
 
 
 import xtelnet
@@ -34,7 +34,7 @@ import xtelnet
 
 
 
-The session class contains all the data of the session (username, password, telnet's banner, prompt, prompt's end, session logs):
+<h4>The session class contains all the data of the session (username, password, telnet's banner, prompt, prompt's end, session logs):</h4>
 
 
 
@@ -52,7 +52,7 @@ import xtelnet
 
 
 
-To reset the session's saved data:
+<h4>To reset the session's saved data:</h4>
 
 
 
@@ -65,10 +65,10 @@ import xtelnet
 <br>t.reset_session()
 
 
-To get the telnet's banner of the remote machine:
+<h4>To get the telnet's banner of the remote machine:</h4>
 
 
-(no login)
+<h4>(no login)</h4>
 
 import xtelnet
 <br>t=xtelnet.session()
@@ -78,7 +78,7 @@ import xtelnet
 
 
 
-(after login)
+<h4>(after login)</h4>
 
 
 
