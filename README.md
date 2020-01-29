@@ -21,6 +21,76 @@ import xtelnet
 <br>print(output2)
 <br>t.close()
 
+
+
+To start a manual interactive session after login, just do:
+
+
+import xtelnet
+<br>t=xtelnet.session()
+<br>ip='192.168.0.32'#just an example
+<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
+<br>t.interact()
+
+
+
+The session class contains all the data of the session (username, password, telnet's banner, prompt, prompt's end, session logs):
+
+
+
+import xtelnet
+<br>t=xtelnet.session()
+<br>ip='192.168.0.32'#just an example
+<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
+<br>t.execute('ls')
+<br>print(t.username)
+<br>print(t.password)
+<br>print(t.banner)
+<br>print(t.prompt)
+<br>print(t.prompt_end)
+<br>print(t.logs)
+
+
+
+To reset the session's saved data:
+
+
+
+import xtelnet
+<br>t=xtelnet.session()
+<br>ip='192.168.0.32'#just an example
+<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
+<br>t.execute('ls')
+<br>t.close()
+<br>t.reset_session()
+
+
+To get the telnet's banner of the remote machine:
+
+
+(no login)
+
+import xtelnet
+<br>t=xtelnet.session()
+<br>ip='192.168.0.32'#just an example
+<br>banner=t.get_banner(ip,p=23,timeout=5)
+<br>print(banner)
+
+
+
+(after login)
+
+
+
+import xtelnet
+<br>t=xtelnet.session()
+<br>ip='192.168.0.32'#just an example
+<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
+<br>banner=t.banner
+<br>print(banner)
+
+
+
 # Usage from command line :
 
 <br>python -m xtelnet host [options...]
@@ -28,17 +98,20 @@ import xtelnet
 <br>options:
 
 
-<br>--host : set a host to connect to (required)
-<br>--username : set a username (required if username is needed to access)
-<br>--password : set a password (required if password is needed to access)
-<br>--port : (23 by default) set port (optional)
-<br>--timeout : (5 by default) set timeout (optional)
-<br>--add-command : a command to execute after login (optional)
-<br>--command-timeout : timeout for command execution (optional)
-<br>--set-newline : set a new line indecator("\n" or "\r\n") (optional)
-<br>--no-shell : disable shell after authentication (optional)
-<br>--help : get this help message (optional)
+<br>-username : set a username (required if username is needed to access)
+<br>-password : set a password (required if password is needed to access)
+<br>-port : (23 by default) set port
+<br>-timeout : (5 by default) set timeout
+<br>--add-command : a command to execute after login
+<br>--command-timeout : timeout for command execution
+<br>--set-newline : set a new line indecator("\n" or "\r\n")
+<br>--no-shell : disable shell after authentication
+<br>--help : get this help message
 
-<br>example:
+<br>examples:
 
-<br>python -m xtelnet 127.0.0.1 --username root --password root --add-command "echo ala" --add-command "dir"
+<br>python -m xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
+
+<br>python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
+
+<br>python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
