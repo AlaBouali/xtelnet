@@ -5,11 +5,11 @@ from xtelnet.__init__ import *
 c=sys.argv
 user=""
 pwd=""
-host=''
+host=""
 port=23
-timeout=5
+timeout=3
 commands=[]
-command_timeout=5
+command_timeout=2
 new_line="\n"
 shell=True
 usage="""
@@ -18,10 +18,10 @@ usage: python -m xtelnet host [options...]
 
 options:
 
---username : set a username (required if username is needed to access)
---password : set a password (required if password is needed to access)
---port : (23 by default) set port
---timeout : (5 by default) set timeout
+-username : set a username (required if username is needed to access)
+-password : set a password (required if password is needed to access)
+-port : (23 by default) set port
+-timeout : (5 by default) set timeout
 --add-command : a command to execute after login and disable shell
 --command-timeout : (5 by default) timeout for command execution
 --set-newline : ("\\n" by default) set a new line indecator("\\n" or "\\r\\n")
@@ -30,7 +30,7 @@ options:
 
 example:
 
-python -m xtelnet 127.0.0.1 --username root --password root --add-command "echo ala" --add-command "dir"
+python -m xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
 
 """
 if len(c)<2:
@@ -43,20 +43,20 @@ while(i<(len(c))):
     if (x=="--help"):
         print(usage)
         sys.exit()
-    if (x=="--port"):
+    if (x=="-port"):
         port=int(c[i+1])
         i+=1
-    if (x=="--timeout"):
+    if (x=="-timeout"):
         timeout=int(c[i+1])
         i+=1
-    if (x=="--username"):
+    if (x=="-username"):
         user=c[i+1]
+        i+=1
+    if (x=="-password"):
+        pwd=c[i+1]
         i+=1
     if (x=="--no-shell"):
         shell=False
-    if (x=="--password"):
-        pwd=c[i+1]
-        i+=1
     if (x=="--add-command"):
      commands.append(c[i+1])
      i+=1
@@ -89,7 +89,8 @@ try:
       output=t.execute(cmd,timeout=command_timeout,new_line=new_line)
       if output==None:
         output=''
-      print(output)
+      if output!='':
+       print(output)
  t.close()
 except Exception as e:
      print("[-]Error: "+str(e))
