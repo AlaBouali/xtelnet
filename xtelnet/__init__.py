@@ -12,7 +12,7 @@ class session:
   self.logs={}#where we save input and output logs
  def get_banner(self,u,p=23,timeout=3):#this function is to grab banners only
   self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
-  m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>'],timeout=timeout)#expected login prompts
+  m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
   s=m[2]
   s=escape_ansi(s)
   self.telnet.close()
@@ -24,7 +24,7 @@ class session:
    banner=False
    self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
    while True:
-    m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>'],timeout=timeout)#expected login prompts
+    m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
     s=m[2]
     s=escape_ansi(s)
     if banner==False:
@@ -36,7 +36,7 @@ class session:
      self.telnet.write("{}\n".format(username).encode('utf-8'))#send username
      usr=True
      self.username=username
-    elif (("password:" in str(s).lower()) or ("pass:" in str(s).lower())):#in case it asked for password
+    elif (("password:" in str(s).lower()) or ("pass:" in str(s).lower()) or ("passwd:" in str(s).lower())):#in case it asked for password
      self.telnet.write("{}\n".format(password).encode('utf-8'))#send password
      pwd=True
      self.password=password

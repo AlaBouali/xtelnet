@@ -28,9 +28,13 @@ options:
 --no-shell : (enabled by default if no commands are specified) disable shell after authentication
 --help : get this help message
 
-example:
+examples:
 
 python -m xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
+
+python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
+
+python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
 
 """
 if len(c)<2:
