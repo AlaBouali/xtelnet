@@ -14,7 +14,7 @@ pip3 install xtelnet
 import xtelnet
 <br>t=xtelnet.session()
 <br>ip='192.168.0.32'#just an example
-<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
+<br>t.connect(ip, username='root',password='toor',p=23,timeout=5)
 <br>output1=t.execute('echo ala_is_king')
 <br>print(output1)
 <br>output2=t.execute('cd / && ls')
@@ -29,65 +29,39 @@ import xtelnet
 import xtelnet
 <br>t=xtelnet.session()
 <br>ip='192.168.0.32'#just an example
-<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
+<br>t.connect(ip, username='root',password='toor',p=23,timeout=5)
 <br>t.interact()
 
 
 
-<h3>The session class contains all the data of the session (username, password, telnet's banner, prompt, prompt's end, session logs):</h3>
+<h3>The multi_session helps you in controlling multiple telnet sessions in parallel:</h3>
 
 
 
 import xtelnet
-<br>t=xtelnet.session()
-<br>ip='192.168.0.32'#just an example
-<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
-<br>t.execute('ls')
-<br>print(t.username)
-<br>print(t.password)
-<br>print(t.banner)
-<br>print(t.prompt)
-<br>print(t.prompt_end)
-<br>print(t.logs)
+<br>t=xtelnet.multi_session()
+<br>ip1='192.168.0.32'#just an example
+<br>ip2='192.168.0.4'
+<br>ip3='192.168.0.10'
+<br>ip4='192.168.0.11'
+<br>ip5='192.168.0.12'
+<br>host1=xtelnet.dict_host(ip1, username='root',password='toor',p=23,timeout=5)
+<br>host2=xtelnet.dict_host(ip2, username='root',password='toor',p=23,timeout=5)
+<br>host3=xtelnet.dict_host(ip3, username='root',password='toor',p=23,timeout=5)
+<br>host4=xtelnet.dict_host(ip4, username='root',password='toor',p=23,timeout=5)
+<br>host5=xtelnet.dict_host(ip5, username='root',password='toor',p=23,timeout=5)
+<br>t.connect([host1,host2,host3,host4,host5])
+<br>print(t.sessions)#to see the connected hosts
+<br>c=t.all_execute('echo "ala is king"')#execute this command on all hosts
+<br>print(c)#print output
+<br>c=t.some_execute([ip1,ip2],'echo "ala is king"')#execute this command on some hosts
+<br>print(c)
+<br>c=t.host_execute(ip1,'echo "ala is king"')#execute this command on this host
+<br>print(c)
+<br>t.disconnect_host(ip1)#to disconnect of this host
+<br>t.disconnect_some([ip2,ip3])#to disconnect of those hosts
+<br>t.disconnect_all()#to disconnect of all hosts
 
-
-
-<h3>To reset the session's saved data:</h3>
-
-
-
-import xtelnet
-<br>t=xtelnet.session()
-<br>ip='192.168.0.32'#just an example
-<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
-<br>t.execute('ls')
-<br>t.close()
-<br>t.reset_session()
-
-
-<h3>To get the telnet's banner of the remote machine:</h3>
-
-
-<h4>(no login)</h4>
-
-import xtelnet
-<br>t=xtelnet.session()
-<br>ip='192.168.0.32'#just an example
-<br>banner=t.get_banner(ip,p=23,timeout=5)
-<br>print(banner)
-
-
-
-<h4>(after login)</h4>
-
-
-
-import xtelnet
-<br>t=xtelnet.session()
-<br>ip='192.168.0.32'#just an example
-<br>t.login(ip, username='root',password='toor',p=23,timeout=5)
-<br>banner=t.banner
-<br>print(banner)
 
 
 
