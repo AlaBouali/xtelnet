@@ -78,7 +78,7 @@ if len(commands)>0:
     shell=False
 t=session()
 try:
- t.login(host,username=user,password=pwd,timeout=timeout,p=port)
+ t.connect(host,username=user,password=pwd,timeout=timeout,p=port)
  if len(commands)>0:
   for x in commands:
      print(t.prompt+str(x))
