@@ -1,7 +1,7 @@
 import telnetlib,socket,re,threading,time
 
 def escape_ansi(line):#this function escape all ANSI characters in any given string
-    return  re.compile(r'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])').sub('',line.decode("utf-8"))
+    return  re.compile(r'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])').sub('',line.decode("utf-8","ignore"))
 
 def get_banner(u,p=23,timeout=3):#this function is to grab banners only
   telnet = telnetlib.Telnet(u,p,timeout=timeout)
