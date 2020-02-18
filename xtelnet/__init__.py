@@ -3,18 +3,20 @@ import telnetlib,socket,re,threading,time
 def escape_ansi(line):#this function escape all ANSI characters in any given string
     return  re.compile(r'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])').sub('',line.decode("utf-8"))
 
+def get_banner(u,p=23,timeout=3):#this function is to grab banners only
+  telnet = telnetlib.Telnet(u,p,timeout=timeout)
+  m=telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
+  s=m[2]
+  m=None
+  s=escape_ansi(s)
+  telnet.close()
+  telnet=None
+  return "\r\n".join(s.split("\r\n")[:-1]).strip()
+
 class session:
  def __init__(self):
   self.prompt=None
   self.telnet=None
- def get_banner(self,u,p=23,timeout=3):#this function is to grab banners only
-  self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
-  m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
-  s=m[2]
-  s=escape_ansi(s)
-  self.telnet.close()
-  self.telnet=None
-  return "\r\n".join(s.split("\r\n")[:-1]).strip()
  def no_authentication(self,u,p=23,timeout=3):
   try:
    if self.telnet:
@@ -41,6 +43,7 @@ class session:
    while True:
     m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
     s=m[2]
+    m=None
     s=escape_ansi(s)
     if (('name:' in str(s).lower()) or ('login:' in str(s).lower()) or ('user:' in str(s).lower())):#in case it asked for username
      if usr==True:
@@ -98,9 +101,10 @@ class session:
          while True:#retrieve all commands 
              self.telnet.write("\n".encode('utf-8'))
              o=self.telnet.read_until(b"---- More ----",timeout=more_timeout)
-             if x.lower() in str(c).lower():
+             if str(self.prompt).lower() in str(c).lower():
               break
              c+=o
+         o=None
       c=escape_ansi(c)
       c=c.strip()
       try:
@@ -157,37 +161,37 @@ class multi_session:#this class is made to control multiple sessions in parallel
    if error==True:
     print("{} : {}".format(host["host"],str(e)))
   self.counter+=1
- def all_execute(self,cmd,timeout=2,error_logs=False):#execute the "cmd" on all hosts in "self.sessions"
+ def all_execute(self,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on all hosts in "self.sessions"
   logs={}
   self.counter=0
   for x in self.sessions:
-   t=threading.Thread(target=self.run_command,args=(x,cmd,timeout,logs,error_logs,))#again, we are using threads to speed thing up :)
+   t=threading.Thread(target=self.run_command,args=(x,cmd,timeout,logs,error_logs,new_line,))#again, we are using threads to speed thing up :)
    t.start()
   while self.counter<len(self.sessions):
       time.sleep(.01)
   self.counter=None
   return logs
- def some_execute(self,h,cmd,timeout=2,error_logs=False):#execute the "cmd" on some hosts in "self.sessions" whom are passed as a list ("h" parameter)
+ def some_execute(self,h,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on some hosts in "self.sessions" whom are passed as a list ("h" parameter)
   logs={}
   self.counter=0
   for x in h:
-   t=threading.Thread(target=self.run_command,args=(x,cmd,timeout,logs,error_logs,))
+   t=threading.Thread(target=self.run_command,args=(x,cmd,timeout,logs,error_logs,new_line,))
    t.start()
   while self.counter<len(h):
       time.sleep(.01)
   self.counter=None
   return logs
- def host_execute(self,h,cmd,timeout=2,error_logs=False):#execute the "cmd" on a single host in "self.sessions" which is passed as a string ("h" parameter)
+ def host_execute(self,h,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on a single host in "self.sessions" which is passed as a string ("h" parameter)
   logs={}
   self.counter=0
-  self.run_command(h,cmd,timeout,logs,error_logs)
+  self.run_command(h,cmd,timeout,logs,error_logs,new_line)
   self.counter=None
   return logs
- def run_command(self,h,cmd,timeout,log,error):#execute the "cmd" on a single host which is passed as a string ("h" parameter)
+ def run_command(self,h,cmd,timeout,log,error,newline):#execute the "cmd" on a single host which is passed as a string ("h" parameter)
   try:
    r=''
    t=self.sessions[h]
-   r=t.execute(cmd,timeout=timeout)
+   r=t.execute(cmd,timeout=timeout,new_line=newline)
   except Exception as e:
    if error==True:
     print("{} : {}".format(h,str(e)))
