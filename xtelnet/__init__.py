@@ -1,36 +1,65 @@
 import telnetlib,socket,re,threading,time
 
+login_prompts=[b'User:',b'user:',b'User>',b'user>',b'Name:',b'sername:',b'name:',b'Name>',b'sername>',b'name>',b'ogin:',b'ogin>',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:',b'assword>',b'asswd>',b'pass>',b'Pass>']
+
+fail_prompts=['expired','invalid','wrong','failed','incorrect','bad','denied','closed','user:','user>','username:','name:','username>','name>','login:','login>','password:','pass:','passwd:','password>','passwd>','pass>']
+
+user_prompts=['user:','user>','username:','username>','name:','name>','login:','login>']
+
+password_prompts=['password:','password>','pass:','pass>','passwd:','passwd>']
+
+enter_prompts=['press return','press enter','enter>']
+
 def escape_ansi(line):#this function escape all ANSI characters in any given string
     return  re.compile(r'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])').sub('',line.decode("utf-8","ignore"))
 
 def get_banner(u,p=23,timeout=3):#this function is to grab banners only
   telnet = telnetlib.Telnet(u,p,timeout=timeout)
-  m=telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
-  s=m[2]
-  m=None
-  s=escape_ansi(s)
+  c=''
+  while True:
+   try:
+    s=telnet.read_some()#keep reading data
+    s=escape_ansi(s)
+    c+=s
+    s=escape_ansi(s)
+    c+=s
+   except:
+       break
   telnet.close()
   telnet=None
-  return "\r\n".join(s.split("\r\n")[:-1]).strip()
+  return s.strip()
 
 class session:
  def __init__(self):
   self.prompt=None
   self.telnet=None
- def no_authentication(self,u,p=23,timeout=3):
+ def no_authentication(self,u,p=23,timeout=3):#just keep reading the data to the last byte, then we look for the prompt 
   try:
    if self.telnet:
        raise Exception("Already connected")
    self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
    c=''
    while True:
-    s=escape_ansi(self.telnet.read_some())#expected login prompts
-    c+=s.strip()
-    if ((c[-1:]=='$') or (c[-1:]=='#') or (c[-1:]=='%') or (c[-1:]=='>') or (c[-1:]==']') ):#in case this is unauthenticated server
+    try:
+     c=escape_ansi(self.telnet.read_some()).strip()
+     if any(i in c.lower() for i in enter_prompts)==True:
+        self.telnet.write("\n".encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
+    except:
+        break
+   if (any(i in c.lower() for i in user_prompts)==False) and (any(i in c.lower() for i in password_prompts)==False):
+     if ((c[-1:]=='$') or (c[-1:]=='#') or (c[-1:]=='%') or (c[-1:]=='>') or (c[-1:]==']') ):#in case this is unauthenticated server
        self.prompt=(c.split("\r\n")[-1]).strip()
        c=None
-       s=None
-       break
+     else:
+       self.telnet.close()#close telnet connection
+       self.telnet=None
+       c=None
+       raise Exception("Authentication Failed")
+   else:
+       self.telnet.close()#close telnet connection
+       self.telnet=None
+       c=None
+       raise Exception("Authentication Failed")
   except socket.timeout:
    self.telnet=None
    raise Exception("Timed out")
@@ -41,25 +70,31 @@ class session:
        raise Exception("Already connected")
    self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
    while True:
-    m=self.telnet.expect([b'ser:',b'Name:',b'sername:',b'name:',b'ogin:',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:'],timeout=timeout)#expected login prompts
+    m=self.telnet.expect(login_prompts,timeout=timeout)#expected login prompts
     s=m[2]
     m=None
     s=escape_ansi(s)
-    if (('name:' in str(s).lower()) or ('login:' in str(s).lower()) or ('user:' in str(s).lower())):#in case it asked for username
-     if usr==True:
+    if any(i in s.lower() for i in user_prompts)==True:#in case it asked for username
+     if "<myuser>" in s.lower():#cisco prompts can be tricky :) 1
+         pass
+     else: 
+      if usr==True:
         self.telnet.close()#close telnet connection
         self.telnet=None
         usr=None
         s=None
         c=None
         raise Exception("Authentication Failed")#so we don't get tricked into sending username multiple times after failure
-     self.telnet.write("{}\n".format(username).encode('utf-8'))#send username
-     usr=True
-    elif (("password:" in str(s).lower()) or ("pass:" in str(s).lower()) or ("passwd:" in str(s).lower())):#in case it asked for password
-     self.telnet.write("{}\n".format(password).encode('utf-8'))#send password
-     break
-    elif "enter>" in str(s).lower():
-        self.telnet.write("\n".format(cmd.strip(),new_line).encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
+      self.telnet.write("{}\n".format(username).encode('utf-8'))#send username
+      usr=True
+    elif any(i in s.lower() for i in password_prompts)==True:#in case it asked for password
+     if "<mypassword>" in s.lower():#cisco prompts can be tricky :) 2
+         pass
+     else:
+      self.telnet.write("{}\n".format(password).encode('utf-8'))#send password
+      break
+    elif any(i in s.lower() for i in enter_prompts)==True:
+        self.telnet.write("\n".encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
     else:
       c=s.strip()
       if ((c[-1:]=='$') or (c[-1:]=='#') or (c[-1:]=='%') or (c[-1:]=='>') or (c[-1:]==']') ):#in case this is unauthenticated server
@@ -68,15 +103,14 @@ class session:
        s=None
        c=None
        return None
-      break
    usr=None
    while True:
       c=escape_ansi(self.telnet.read_some())#keep reading the data until we get the login result
       c=c.strip()
-      if ('enter>' in c.lower()):
-          self.telnet.write("\n".format(cmd.strip(),new_line).encode('utf-8'))
+      if any(i in str(c).lower() for i in enter_prompts)==True:
+          self.telnet.write("\n".encode('utf-8'))
       else:
-       if (('denied' in c.lower()) or ('bad' in c.lower()) or ("incorrect" in c.lower()) or ('failed' in c.lower()) or ('wrong' in c.lower()) or ('invalid' in c.lower()) or ('name:' in c.lower()) or ('login:' in c.lower()) or ('user:' in c.lower()) or ('password:' in c.lower()) or  ('pass:' in c.lower())):
+       if any(i in str(c).lower() for i in fail_prompts)==True:
           self.telnet.close()#close telnet connection
           self.telnet=None
           c=None
