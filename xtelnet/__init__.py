@@ -1,14 +1,24 @@
 import telnetlib,socket,re,threading,time
 
+#if the default method didn't work out, then change the values inside those lists to reach your goal!!!
+
+#expected login prompts ( don't forget the: "b" before the expected string )
 login_prompts=[b'User:',b'user:',b'User>',b'user>',b'Name:',b'sername:',b'name:',b'Name>',b'sername>',b'name>',b'ogin:',b'ogin>',b'assword:',b'Pass:',b'pass:',b'nter>',b'asswd:',b'assword>',b'asswd>',b'pass>',b'Pass>']
 
+#expected login failing prompts
 fail_prompts=['expired','invalid','wrong','failed','incorrect','bad','denied','closed','user:','user>','username:','name:','username>','name>','login:','login>','password:','pass:','passwd:','password>','passwd>','pass>']
 
+#expected username prompts
 user_prompts=['user:','user>','username:','username>','name:','name>','login:','login>']
 
+#expected password prompts
 password_prompts=['password:','password>','pass:','pass>','passwd:','passwd>']
 
+#expected anti-bot prompts
 enter_prompts=['press return','press enter','enter>']
+
+#expected ends of shell's prompt
+prompt_end=['$','#','>','%',']']
 
 def escape_ansi(line):#this function escape all ANSI characters in any given string
     return  re.compile(r'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])').sub('',line.decode("utf-8","ignore"))
@@ -18,16 +28,15 @@ def get_banner(u,p=23,timeout=3):#this function is to grab banners only
   c=''
   while True:
    try:
-    s=telnet.read_some()#keep reading data
-    s=escape_ansi(s)
-    c+=s
-    s=escape_ansi(s)
+    s=escape_ansi(telnet.read_some())#keep reading data
+    if s=='':
+        break
     c+=s
    except:
        break
   telnet.close()
   telnet=None
-  return s.strip()
+  return c.strip()
 
 class session:
  def __init__(self):
@@ -41,13 +50,16 @@ class session:
    c=''
    while True:
     try:
-     c=escape_ansi(self.telnet.read_some()).strip()
+     c=escape_ansi(self.telnet.read_some())
+     if c=='':
+         break
+     c=c.strip()
      if any(i in c.lower() for i in enter_prompts)==True:
         self.telnet.write("\n".encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
     except:
         break
    if (any(i in c.lower() for i in user_prompts)==False) and (any(i in c.lower() for i in password_prompts)==False):
-     if ((c[-1:]=='$') or (c[-1:]=='#') or (c[-1:]=='%') or (c[-1:]=='>') or (c[-1:]==']') ):#in case this is unauthenticated server
+     if (c[-1:] in prompt_end):#in case this is unauthenticated server
        self.prompt=(c.split("\r\n")[-1]).strip()
        c=None
      else:
@@ -97,7 +109,7 @@ class session:
         self.telnet.write("\n".encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
     else:
       c=s.strip()
-      if ((c[-1:]=='$') or (c[-1:]=='#') or (c[-1:]=='%') or (c[-1:]=='>') or (c[-1:]==']') ):#in case this is unauthenticated server
+      if (c[-1:] in prompt_end):#in case this is unauthenticated server
        self.prompt=(c.split("\r\n")[-1]).strip()
        usr=None
        s=None
@@ -115,7 +127,7 @@ class session:
           self.telnet=None
           c=None
           raise Exception("Authentication Failed")#if login failed
-       if ((c[-1:]=='$') or (c[-1:]=='#') or (c[-1:]=='%') or (c[-1:]=='>') or (c[-1:]==']') ):#in case authentication succeeded
+       if (c[-1:] in prompt_end):#in case authentication succeeded
         self.prompt=(c.split("\r\n")[-1]).strip()
         c=None
         return None
