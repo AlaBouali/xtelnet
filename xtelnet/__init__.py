@@ -38,6 +38,7 @@ def get_banner(u,p=23,timeout=3,payload=None):#this function is to grab banners 
        break
   telnet.close()
   telnet=None
+  s=None
   return c.strip()
 
 class session:
