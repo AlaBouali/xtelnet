@@ -89,3 +89,22 @@ import xtelnet
 <br>python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
 
 <br>python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
+
+
+
+# Xtelnet can be used to grab banners:
+
+
+import xtelnet
+<br>telnet_banner=xtelnet.get_banner("localhost",p=23)#suppose you have telnet server running on that port
+<br>
+<br>http_banner=xtelnet.get_banner("www.google.com",p=80,payload="GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n")#we send a http request as a payload to get the response
+<br>
+<br>ssh_banner=xtelnet.get_banner("localhost",p=22)
+
+
+# Xtelnet can escape all ANSI characters :
+
+
+import xtelnet
+<br>escaped_string=xtelnet.escape_ansi( unescaped_string )

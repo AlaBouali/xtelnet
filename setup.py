@@ -3,7 +3,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name="xtelnet",
-    version="1.2.2",
+    version="1.2.3",
     author="AlaBouali",
     author_email="trap.leader.123@gmail.com",
     description="simple telnet module",
