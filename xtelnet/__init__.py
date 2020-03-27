@@ -138,10 +138,12 @@ class session:
           self.telnet.close()#close telnet connection
           self.telnet=None
           c=None
+          count=None
           raise Exception("Authentication Failed")#if login failed
        if (c[-1:] in prompt_end):#in case authentication succeeded
         self.prompt=(c.split("\r\n")[-1]).strip()
         c=None
+        count=None
         return None
   except socket.timeout:
    self.telnet=None
