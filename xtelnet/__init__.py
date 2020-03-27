@@ -23,8 +23,10 @@ prompt_end=['$','#','>','%',']']
 def escape_ansi(line):#this function escape all ANSI characters in any given string
     return  re.compile(r'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])').sub('',line.decode("utf-8","ignore"))
 
-def get_banner(u,p=23,timeout=3):#this function is to grab banners only
+def get_banner(u,p=23,timeout=3,payload=None):#this function is to grab banners only
   telnet = telnetlib.Telnet(u,p,timeout=timeout)
+  if payload:
+      telnet.write("{}".format(payload).encode('utf-8'))#in case we need to send any data to receive the banner
   c=''
   while True:
    try:
@@ -116,9 +118,18 @@ class session:
        c=None
        return None
    usr=None
+   count=0
    while True:
       c=escape_ansi(self.telnet.read_some())#keep reading the data until we get the login result
       c=c.strip()
+      if c=="":
+          count+=1
+          if count==3:
+              self.telnet.close()#close telnet connection
+              self.telnet=None
+              c=None
+              count=None
+              raise Exception("Authentication Failed")#if login failed
       if any(i in str(c).lower() for i in enter_prompts)==True:
           self.telnet.write("\n".encode('utf-8'))
       else:
