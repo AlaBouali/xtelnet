@@ -67,7 +67,7 @@ import xtelnet
 
 # Usage from command line :
 
-<br>python -m xtelnet host [options...]
+<br>xtelnet host [options...]
 
 <br>options:
 
@@ -84,11 +84,11 @@ import xtelnet
 
 <br>examples:
 
-<br>python -m xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
+<br>xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
 
-<br>python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
+<br>xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
 
-<br>python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
+<br>xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
 
 
 
