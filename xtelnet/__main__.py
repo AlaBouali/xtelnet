@@ -7,14 +7,14 @@ user=""
 pwd=""
 host=""
 port=23
-timeout=3
+timeout=5
 commands=[]
 command_timeout=2
 new_line="\n"
 shell=True
 usage="""
 
-usage: python -m xtelnet host [options...]
+usage: xtelnet host [options...]
 
 options:
 
@@ -30,11 +30,11 @@ options:
 
 examples:
 
-python -m xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
+xtelnet 127.0.0.1 -username root -password root --add-command "echo ala" --add-command "dir"
 
-python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
+xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
 
-python -m xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
+xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
 
 """
 if len(c)<2:
@@ -76,18 +76,19 @@ if host=='':
     sys.exit()
 if len(commands)>0:
     shell=False
-t=session()
-try:
- t.connect(host,username=user,password=pwd,timeout=timeout,p=port)
- if len(commands)>0:
-  for x in commands:
+def run():
+ t=session()
+ try:
+  t.connect(host,username=user,password=pwd,timeout=timeout,p=port)
+  if len(commands)>0:
+   for x in commands:
      print(t.prompt+str(x))
      print(str(t.execute(x,timeout=command_timeout,new_line=new_line)))
-  t.close()
- if shell==True:
-  while True:
+   t.close()
+  if shell==True:
+   while True:
       cmd=input(t.prompt)
-      if ((cmd.lower().strip()=="exit") or (cmd.lower().strip()=="logout")):
+      if ((cmd.lower().strip()=="exit") or (cmd.lower().strip()=="logout") or (cmd.lower().strip()=="quit")):
           t.close()
           sys.exit()
       output=t.execute(cmd,timeout=command_timeout,new_line=new_line)
@@ -95,6 +96,7 @@ try:
         output=''
       if output!='':
        print(output)
- t.close()
-except Exception as e:
+   t.close()
+ except Exception as e:
      print("[-]Error: "+str(e))
+run()
