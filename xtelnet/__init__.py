@@ -42,14 +42,19 @@ def get_banner(u,p=23,timeout=3,payload=None):#this function is to grab banners 
   return c.strip()
 
 class session:
+
  def __init__(self):
   self.prompt=None
   self.telnet=None
- def no_authentication(self,u,p=23,timeout=3):#just keep reading the data to the last byte, then we look for the prompt 
+  self.connectin_string=None
+  self.executing=None
+
+ def no_authentication(self,u,p=23,timeout=3,debug_level=0):#just keep reading the data to the last byte, then we look for the prompt 
   try:
    if self.telnet:
        raise Exception("Already connected")
    self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
+   self.set_debug_level(debug_level)
    c=''
    while True:
     try:
@@ -78,12 +83,14 @@ class session:
   except socket.timeout:
    self.telnet=None
    raise Exception("Timed out")
- def authentication(self,u,username="",password="",p=23,timeout=3):
+
+ def authentication(self,u,username="",password="",p=23,timeout=3,debug_level=0):
   try:
    usr=False
    if self.telnet:
        raise Exception("Already connected")
    self.telnet = telnetlib.Telnet(u,p,timeout=timeout)
+   self.set_debug_level(debug_level)
    while True:
     m=self.telnet.expect(login_prompts,timeout=timeout)#expected login prompts
     s=m[2]
@@ -148,25 +155,63 @@ class session:
   except socket.timeout:
    self.telnet=None
    raise Exception("Timed out")
- def connect(self,u,username=None,password=None,p=23,timeout=3):#connect to a given host
+
+ def connect(self,u,username=None,password=None,p=23,timeout=3,debug_level=0):#connect to a given host
   if (((username==None) or (username=="")) and ((password==None) or (password==""))):
-    self.no_authentication(u,p=p,timeout=timeout)#for unauthenticated server
+    self.no_authentication(u,p=p,timeout=timeout,debug_level=debug_level)#for unauthenticated server
   else:
-    self.authentication(u,p=p,timeout=timeout,username=username,password=password)#for authenticated server
- def execute(self,cmd,new_line='\n',timeout=2,more_timeout=2):#this function executes any command and returns the output
+    self.authentication(u,p=p,timeout=timeout,username=username,password=password,debug_level=debug_level)#for authenticated server
+  self.connectin_string="{}:{}:{}:{}:{}".format(u,p,username,password,timeout)
+  self.executing=False
+  
+ def reconnect(self,debug_level=0):#do reconnect if connection is lost and we didn't call "destroy" function of the object
+  l=self.connectin_string.split(':')
+  self.connect(l[0],p=int(l[1]),username=l[2],password=l[3],timeout=int(l[4]),debug_level=debug_level)
+  l=None
+
+ def ping(self):#send empty string (new line) to keep the connection open: PING
+  self.execute('')
+
+ def cwd(self,path,new_line='\n'):#change working directory
+  return self.execute('cd '+path,read_retry=1,new_line=new_line)
+
+ def switch_terminal(self,command,new_line='\n'):#change terminal type
+  return self.execute(command,read_retry=1,new_line=new_line)
+
+ def execute(self,cmd,new_line='\n',read_retry=5):#this function executes any command and returns the output
+    while(self.executing!=False):
+      time.sleep(0.1)
+    self.executing=True
     if cmd!='':
+      c=''
       self.telnet.write("{} {}".format(cmd,new_line).encode('utf-8'))#send the command
-      c=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout)#read data until it receive the end of the prompt after executing the command
-      if "---- More ----" in str(c):
+      read_fails=0
+      while True:
+       more_end=False
+       d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=1).strip()#read data until it receive the end of the prompt after executing the command
+       c+=escape_ansi(d)
+       if str(self.prompt) in str(d):
+        break
+       if len(d)==0:
+        read_fails+=1
+       if read_fails==read_retry:
+        break
+       if "---- More ----" in str(d):
          while True:#retrieve all commands 
              self.telnet.write("\n".encode('utf-8'))
-             o=self.telnet.read_until(b"---- More ----",timeout=more_timeout)
-             if str(self.prompt).lower() in str(c).lower():
+             o=self.telnet.read_until(b"---- More ----",timeout=1)
+             d+=o
+             if str(self.prompt) in str(o):
+              more_end=True
               break
-             c+=o
          o=None
-      c=escape_ansi(c)
-      c=c.strip()
+         c+=escape_ansi(d)
+         if more_end==True:
+          break
+      d=None
+      more_end=None
+      read_fails=None
+      c=c.replace('---- More ----','').strip()
       try:
        c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
       except:
@@ -182,28 +227,38 @@ class session:
       c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
     except:
       pass
-    return c
+    self.executing=False
+    return c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
+
+ def set_debug_level(self,level):
+  self.telnet.debuglevel=level
+
  def interact(self):#this function start a direct interactive telnet session
      self.telnet.write("\n".encode('utf-8'))
      self.telnet.interact()
+
  def close(self):
      self.telnet.close()#close telnet connection
      self.telnet=None#free memory space
      self.prompt=None
- def logout(self,timeout=1):
-     self.execute("logout",timeout=timeout)#logout of the telnet session
+
+ def logout(self):
+     self.execute("logout",read_retry=1)#logout of the telnet session
      self.close()#close telnet connection
- def exit(self,timeout=1):
-     self.execute("exit",timeout=timeout)#exit the telnet session
+
+ def exit(self):
+     self.execute("exit",read_retry=1)#exit the telnet session
      self.close()#close telnet connection
      
 def dict_host(u,username=None,password=None,p=23,timeout=3):#this function takes those values and return a dict which contains all necessary information to create a telnet session using those following class
   return {"host":u,"username":username,"password":password,"port":p,"timeout":timeout}
 
 class multi_session:#this class is made to control multiple sessions in parallel
+
  def __init__(self):
   self.sessions={}#a dict to save telnet sessions with this format: { ip : <telnet session object> }
   self.counter=None
+
  def connect(self,hosts,error_logs=False):#this function takes a list ("hosts" parameter) each element as a dict created by the function "dict_host" and use the information stored on it to create a session object for each ip
   self.counter=0
   for x in hosts:
@@ -212,6 +267,7 @@ class multi_session:#this class is made to control multiple sessions in parallel
   while self.counter<len(hosts):
       time.sleep(.01)
   self.counter=None
+
  def connect_to_host(self,host,error):#connect to a single host it takes the "host_dict" 's returned value and save the ip and the session on the "self.sessions" variable 
   try:
    t=session()
@@ -221,6 +277,7 @@ class multi_session:#this class is made to control multiple sessions in parallel
    if error==True:
     print("{} : {}".format(host["host"],str(e)))
   self.counter+=1
+
  def all_execute(self,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on all hosts in "self.sessions"
   logs={}
   self.counter=0
@@ -231,6 +288,7 @@ class multi_session:#this class is made to control multiple sessions in parallel
       time.sleep(.01)
   self.counter=None
   return logs
+
  def some_execute(self,h,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on some hosts in "self.sessions" whom are passed as a list ("h" parameter)
   logs={}
   self.counter=0
@@ -241,12 +299,14 @@ class multi_session:#this class is made to control multiple sessions in parallel
       time.sleep(.01)
   self.counter=None
   return logs
+
  def host_execute(self,h,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on a single host in "self.sessions" which is passed as a string ("h" parameter)
   logs={}
   self.counter=0
   self.run_command(h,cmd,timeout,logs,error_logs,new_line)
   self.counter=None
   return logs
+
  def run_command(self,h,cmd,timeout,log,error,newline):#execute the "cmd" on a single host which is passed as a string ("h" parameter)
   try:
    r=''
@@ -258,15 +318,18 @@ class multi_session:#this class is made to control multiple sessions in parallel
    r=str(e)
   log.update({h:{cmd:r}})
   self.counter+=1
+
  def disconnect_host(self,host):#disconnect from a single host, passed as string ("host" parameter), and remove it from "self.sessions"
      for x, v in list(self.sessions.items()):
          if x==host:
              self.sessions[x].close()
              del self.sessions[x]
+
  def disconnect_all(self):#disconnect from all hosts and remove them from "self.sessions"
      for x, v in list(self.sessions.items()):
              self.sessions[x].close()
              del self.sessions[x]
+
  def disconnect_some(self,h):#disconnect from some hosts, passed as list ("h" parameter), and remove them from "self.sessions"
     for x in h:
         self.disconnect_host(x)
