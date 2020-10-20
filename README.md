@@ -1,7 +1,7 @@
 # xtelnet
 This is an easy to use telnet module to interact with a remote system smoothly over this protocol!
 
-#Why should I use xtelnet?
+# Why should I use xtelnet?
 
 <ul>
   <li>Easy to use and stable</li>
