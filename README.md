@@ -1,6 +1,22 @@
 # xtelnet
 This is an easy to use telnet module to interact with a remote system smoothly over this protocol!
 
+#Why should I use xtelnet?
+
+<ul>
+  <li>Easy to use and stable</li>
+  <li>Simple Authentication mechanism</li>
+  <li>Compatible with almost all servers when it comes to authentication and executing the commands</li>
+  <li>Available Command line tool</li>
+  <li>Thread-safe: if the session is shared among threads to execute commands, the commands will be executed one by one</li>
+  <li>Supports using multiple sessions concurrently</li>
+  <li>Can connect simultaneously and run in parallel the same command on: single or some or all connected hosts</li>
+  <li>Allow reconnect after closing the connection</li>
+  <li>Allow escape ANSI characters</li>
+  <li>Grap banners</li>
+  <li>Available "ping" function to use if you want to keep the connection open</li>
+</ul>
+
 # Install :
 
 <div style="background: #f8f8f8; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%">pip install xtelnet
