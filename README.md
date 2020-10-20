@@ -13,7 +13,7 @@ This is an easy to use telnet module to interact with a remote system smoothly o
   <li>Can connect simultaneously and run in parallel the same command on: single or some or all connected hosts</li>
   <li>Allow reconnect after closing the connection</li>
   <li>Allow escape ANSI characters</li>
-  <li>Grap banners</li>
+  <li>Grab banners</li>
   <li>Available "ping" function to use if you want to keep the connection open</li>
 </ul>
 
