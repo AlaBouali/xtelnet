@@ -46,7 +46,7 @@ class session:
  def __init__(self):
   self.prompt=None
   self.telnet=None
-  self.connectin_string=None
+  self.connection_string=None
   self.executing=None
 
  def no_authentication(self,u,p=23,timeout=3,debug_level=0):#just keep reading the data to the last byte, then we look for the prompt 
@@ -58,14 +58,15 @@ class session:
    c=''
    while True:
     try:
-     c=escape_ansi(self.telnet.read_some())
-     if c=='':
+     d=escape_ansi(self.telnet.read_some()).strip()
+     c+=d
+     if d=='':
          break
-     c=c.strip()
-     if any(i in c.lower() for i in enter_prompts)==True:
+     if any(i in d.lower() for i in enter_prompts)==True:
         self.telnet.write("\n".encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
     except:
         break
+   d=None
    if (any(i in c.lower() for i in user_prompts)==False) and (any(i in c.lower() for i in password_prompts)==False):
      if (c[-1:] in prompt_end):#in case this is unauthenticated server
        self.prompt=(c.split("\r\n")[-1]).strip()
@@ -161,24 +162,26 @@ class session:
     self.no_authentication(u,p=p,timeout=timeout,debug_level=debug_level)#for unauthenticated server
   else:
     self.authentication(u,p=p,timeout=timeout,username=username,password=password,debug_level=debug_level)#for authenticated server
-  self.connectin_string="{}:{}:{}:{}:{}".format(u,p,username,password,timeout)
+  self.connection_string="{}:{}:{}:{}:{}".format(u,p,username,password,timeout)
   self.executing=False
   
  def reconnect(self,debug_level=0):#do reconnect if connection is lost and we didn't call "destroy" function of the object
-  l=self.connectin_string.split(':')
+  if self.telnet:
+   self.close()
+  l=self.connection_string.split(':')
   self.connect(l[0],p=int(l[1]),username=l[2],password=l[3],timeout=int(l[4]),debug_level=debug_level)
   l=None
 
  def ping(self):#send empty string (new line) to keep the connection open: PING
-  self.execute('')
+  return self.execute('')
 
- def cwd(self,path,new_line='\n'):#change working directory
-  return self.execute('cd '+path,read_retry=1,new_line=new_line)
+ def cwd(self,path,cmd='cd',new_line='\n'):#change working directory
+  return self.execute(cmd+' '+path,read_retries=1,new_line=new_line)
 
  def switch_terminal(self,command,new_line='\n'):#change terminal type
-  return self.execute(command,read_retry=1,new_line=new_line)
+  return self.execute(command,read_retries=1,new_line=new_line)
 
- def execute(self,cmd,new_line='\n',read_retry=5):#this function executes any command and returns the output
+ def execute(self,cmd,new_line='\n',read_retries=15):#this function executes any command and returns the output
     while(self.executing!=False):
       time.sleep(0.1)
     self.executing=True
@@ -194,7 +197,7 @@ class session:
         break
        if len(d)==0:
         read_fails+=1
-       if read_fails==read_retry:
+       if read_fails==read_retries:
         break
        if "---- More ----" in str(d):
          while True:#retrieve all commands 
@@ -218,7 +221,7 @@ class session:
        pass
     else:#if the user just sending a new line
        self.telnet.write("\n".encode('utf-8'))
-       c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout)).strip()#read data until it receive the end of the prompt after executing the command
+       c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=2)).strip()#read data until it receive the end of the prompt after executing the command
     try:
       self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
     except:
@@ -237,81 +240,117 @@ class session:
      self.telnet.write("\n".encode('utf-8'))
      self.telnet.interact()
 
+ def destroy(self):#close the connection and destroy the connection string 
+     self.close()
+     self.connection_string=None
+
  def close(self):
      self.telnet.close()#close telnet connection
      self.telnet=None#free memory space
      self.prompt=None
+     self.executing=None
+
+ def quit(self):
+     self.execute("quit",read_retries=1)#logout of the telnet session
+     self.close()#close telnet connection
 
  def logout(self):
-     self.execute("logout",read_retry=1)#logout of the telnet session
+     self.execute("logout",read_retries=1)#logout of the telnet session
      self.close()#close telnet connection
 
  def exit(self):
-     self.execute("exit",read_retry=1)#exit the telnet session
+     self.execute("exit",read_retries=1)#exit the telnet session
      self.close()#close telnet connection
      
+
+
+
 def dict_host(u,username=None,password=None,p=23,timeout=3):#this function takes those values and return a dict which contains all necessary information to create a telnet session using those following class
   return {"host":u,"username":username,"password":password,"port":p,"timeout":timeout}
+
+
+
 
 class multi_session:#this class is made to control multiple sessions in parallel
 
  def __init__(self):
   self.sessions={}#a dict to save telnet sessions with this format: { ip : <telnet session object> }
   self.counter=None
+  self.executing=None
+  self.connecting=False
+  self.executing=False
 
  def connect(self,hosts,error_logs=False):#this function takes a list ("hosts" parameter) each element as a dict created by the function "dict_host" and use the information stored on it to create a session object for each ip
+  while(self.connecting!=False):
+   time.sleep(0.1)
+  self.connecting=True
   self.counter=0
+  if type(hosts)==dict:
+   hosts=[hosts]
   for x in hosts:
     t=threading.Thread(target=self.connect_to_host,args=(x,error_logs,))#we are using threads to speed things up and connect to all hosts in a very short time (few seconds)
     t.start()
   while self.counter<len(hosts):
       time.sleep(.01)
   self.counter=None
+  self.connecting=False
 
  def connect_to_host(self,host,error):#connect to a single host it takes the "host_dict" 's returned value and save the ip and the session on the "self.sessions" variable 
   try:
    t=session()
-   t.connect(host["host"],p=host["port"],timeout=host["timeout"],username=host["username"],password=host["password"])
+   t.connect(host["host"],p=int(host["port"]),timeout=int(host["timeout"]),username=host["username"],password=host["password"])
    self.sessions.update({host["host"]:t})
   except Exception as e:
    if error==True:
     print("{} : {}".format(host["host"],str(e)))
   self.counter+=1
 
- def all_execute(self,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on all hosts in "self.sessions"
+ def all_execute(self,cmd,read_retries=15,new_line='\n',error_logs=False):#execute the "cmd" on all hosts in "self.sessions"
+  while(self.executing!=False):
+   time.sleep(0.1)
+  self.executing=True
   logs={}
   self.counter=0
   for x in self.sessions:
-   t=threading.Thread(target=self.run_command,args=(x,cmd,timeout,logs,error_logs,new_line,))#again, we are using threads to speed thing up :)
+   t=threading.Thread(target=self.run_command,args=(x,cmd,read_retries,logs,error_logs,new_line,))#again, we are using threads to speed thing up :)
    t.start()
   while self.counter<len(self.sessions):
       time.sleep(.01)
   self.counter=None
+  self.executing=False
   return logs
 
- def some_execute(self,h,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on some hosts in "self.sessions" whom are passed as a list ("h" parameter)
+ def some_execute(self,h,cmd,read_retries=15,new_line='\n',error_logs=False):#execute the "cmd" on some hosts in "self.sessions" whom are passed as a list ("h" parameter)
+  while(self.executing!=False):
+   time.sleep(0.1)
+  self.executing=True
   logs={}
   self.counter=0
   for x in h:
-   t=threading.Thread(target=self.run_command,args=(x,cmd,timeout,logs,error_logs,new_line,))
+   t=threading.Thread(target=self.run_command,args=(x,cmd,read_retries,logs,error_logs,new_line,))
    t.start()
   while self.counter<len(h):
       time.sleep(.01)
   self.counter=None
+  self.executing=False
   return logs
 
- def host_execute(self,h,cmd,new_line='\n',timeout=2,error_logs=False):#execute the "cmd" on a single host in "self.sessions" which is passed as a string ("h" parameter)
+ def host_execute(self,h,cmd,read_retries=15,new_line='\n',error_logs=False):#execute the "cmd" on a single host in "self.sessions" which is passed as a string ("h" parameter)
+  while(self.executing!=False):
+   time.sleep(0.1)
+  self.executing=True
   logs={}
   self.counter=0
-  self.run_command(h,cmd,timeout,logs,error_logs,new_line)
+  self.run_command(h,cmd,read_retries,logs,error_logs,new_line)
   self.counter=None
+  self.executing=False
   return logs
 
- def run_command(self,h,cmd,timeout,log,error,newline):#execute the "cmd" on a single host which is passed as a string ("h" parameter)
+ def run_command(self,h,cmd,read_retries,log,error,newline):#execute the "cmd" on a single host which is passed as a string ("h" parameter)
   try:
    r=''
    t=self.sessions[h]
-   r=t.execute(cmd,timeout=timeout,new_line=newline)
+   r=t.execute(cmd,read_retries=read_retries,new_line=newline)
   except Exception as e:
    if error==True:
     print("{} : {}".format(h,str(e)))
@@ -322,14 +361,22 @@ class multi_session:#this class is made to control multiple sessions in parallel
  def disconnect_host(self,host):#disconnect from a single host, passed as string ("host" parameter), and remove it from "self.sessions"
      for x, v in list(self.sessions.items()):
          if x==host:
-             self.sessions[x].close()
+             self.sessions[x].destroy()
              del self.sessions[x]
 
  def disconnect_all(self):#disconnect from all hosts and remove them from "self.sessions"
      for x, v in list(self.sessions.items()):
-             self.sessions[x].close()
+             self.sessions[x].destroy()
              del self.sessions[x]
 
  def disconnect_some(self,h):#disconnect from some hosts, passed as list ("h" parameter), and remove them from "self.sessions"
     for x in h:
         self.disconnect_host(x)
+
+ def destroy(self):#destroy everything :) HAKAI !!!
+    self.disconnect_all()
+    self.sessions=None
+    self.executing=None
+    self.connecting=None
+    self.executing=None
+    self.counter=None

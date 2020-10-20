@@ -1,15 +1,15 @@
 import sys
 if  sys.version_info < (3,0):
     input=raw_input
-from xtelnet.__init__ import *
+from .__init__ import *
 c=sys.argv
 user=""
 pwd=""
 host=""
 port=23
 timeout=5
+read_retries=15
 commands=[]
-command_timeout=2
 new_line="\n"
 shell=True
 usage="""
@@ -18,14 +18,15 @@ usage: xtelnet host [options...]
 
 options:
 
+
 -username : set a username (required if username is needed to access)
 -password : set a password (required if password is needed to access)
 -port : (23 by default) set port
 -timeout : (5 by default) set timeout
 --add-command : a command to execute after login and disable shell
---command-timeout : (5 by default) timeout for command execution
 --set-newline : ("\\n" by default) set a new line indecator("\\n" or "\\r\\n")
 --no-shell : (enabled by default if no commands are specified) disable shell after authentication
+--read-retries : times to retry reading the response if it takes too long
 --help : get this help message
 
 examples:
@@ -59,14 +60,14 @@ while(i<(len(c))):
     if (x=="-password"):
         pwd=c[i+1]
         i+=1
+    if (x=="--read-retries"):
+        read_retries=int(c[i+1])
+        i+=1
     if (x=="--no-shell"):
         shell=False
     if (x=="--add-command"):
      commands.append(c[i+1])
      i+=1
-    if (x=="--command-timeout"):
-        command_timeout=c[i+1]
-        i+=1
     if (x=="--set-newline"):
         command_timeout=c[i+1]
         i+=1
@@ -83,7 +84,7 @@ def run():
   if len(commands)>0:
    for x in commands:
      print(t.prompt+str(x))
-     print(str(t.execute(x,timeout=command_timeout,new_line=new_line)))
+     print(str(t.execute(x,new_line=new_line,read_retries=read_retries)))
    t.close()
   if shell==True:
    while True:
@@ -91,7 +92,7 @@ def run():
       if ((cmd.lower().strip()=="exit") or (cmd.lower().strip()=="logout") or (cmd.lower().strip()=="quit")):
           t.close()
           sys.exit()
-      output=t.execute(cmd,timeout=command_timeout,new_line=new_line)
+      output=t.execute(cmd,new_line=new_line,read_retries=read_retries)
       if output==None:
         output=''
       if output!='':
@@ -99,4 +100,3 @@ def run():
    t.close()
  except Exception as e:
      print("[-]Error: "+str(e))
-run()
