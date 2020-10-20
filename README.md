@@ -9,7 +9,7 @@ This is an easy to use telnet module to interact with a remote system smoothly o
   <li>Compatible with almost all servers when it comes to authentication and executing the commands</li>
   <li>Available Command line tool</li>
   <li>Thread-safe: if the session is shared among threads to execute commands, the commands will be executed one by one</li>
-  <li>Supports using multiple sessions concurrently</li>
+  <li>Supports running multiple sessions concurrently</li>
   <li>Can connect simultaneously and run in parallel the same command on: single or some or all connected hosts</li>
   <li>Allow reconnect after closing the connection</li>
   <li>Allow escape ANSI characters</li>
