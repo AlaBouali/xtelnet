@@ -19,8 +19,13 @@ import xtelnet
 <br>print(output1)
 <br>output2=t.execute('cd / && ls')
 <br>print(output2)
-<br>t.close()
-
+<br>t.cwd('/')#change working directory
+<br>t.switch_terminal('tclsh')#change terminal type where the prompt will get changed as well (just and example of command to do it on some routers)
+<br>t.switch_terminal('tclquit')
+<br>t.close()#close the connection but keep the connection string to do reconnect later
+<br>t.reconnect()#reconnect to the host with the previous parameters
+<br>t.ping()#send new line to the host to keep the connectio open
+<br>t.destroy()#close the connection and remove the connection string totally, after this you can't do "reconnect"
 
 
 <h3>To start a manual interactive session after login, just do:</h3>
@@ -61,7 +66,7 @@ import xtelnet
 <br>t.disconnect_host(ip1)#to disconnect of this host
 <br>t.disconnect_some([ip2,ip3])#to disconnect of those hosts
 <br>t.disconnect_all()#to disconnect of all hosts
-
+<br>t.destroy()#disconnect from all hosts
 
 
 
@@ -76,10 +81,10 @@ import xtelnet
 <br>-password : set a password (required if password is needed to access)
 <br>-port : (23 by default) set port
 <br>-timeout : (5 by default) set timeout
-<br>--add-command : a command to execute after login
-<br>--command-timeout : timeout for command execution
-<br>--set-newline : set a new line indecator("\n" or "\r\n")
-<br>--no-shell : disable shell after authentication
+<br>--add-command : a command to execute after login and disable shell
+<br>--set-newline : ("\\n" by default) set a new line indecator("\\n" or "\\r\\n")
+<br>--no-shell : (enabled by default if no commands are specified) disable shell after authentication
+<br>--read-retries : times to retry reading the response if it takes too long
 <br>--help : get this help message
 
 <br>examples:
