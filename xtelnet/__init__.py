@@ -42,7 +42,9 @@ def get_banner(u,p=23,timeout=3,payload=None):#this function is to grab banners 
   return c.strip()
 
 class session:
-
+ 
+ __slots__=["prompt","telnet","connection_string","executing"]
+ 
  def __init__(self):
   self.prompt=None
   self.telnet=None
@@ -271,7 +273,9 @@ def dict_host(u,username=None,password=None,p=23,timeout=3):#this function takes
 
 
 
-class multi_session:#this class is made to control multiple sessions in parallel
+class multi_session:#this class is made to control multiple sessions in parallel 
+
+ __slots__=["sessions","counter","executing","connecting","executing"]
 
  def __init__(self):
   self.sessions={}#a dict to save telnet sessions with this format: { ip : <telnet session object> }
