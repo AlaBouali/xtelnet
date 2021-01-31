@@ -188,19 +188,19 @@ class session:
    self.telnet.write("{} {}".format(cmd,new_line).encode('utf-8'))#send the command
    d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout).strip()#read data until it receive the end of the prompt after executing the command
    c=escape_ansi(d)
+   c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
+   self.executing=False
+   try:
+      self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+   except:
+      pass
+   try:
+      c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
+   except:
+      pass
   except Exception as exc:
        self.executing=False
        raise Exception(exc)
-  c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
-  self.executing=False
-  try:
-      self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
-  except:
-      pass
-  try:
-      c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
-  except:
-      pass
   self.executing=False
   return c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
 
@@ -213,19 +213,19 @@ class session:
    d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout).strip()#read data until it receive the end of the prompt after executing the command
    c=escape_ansi(d)
    self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+   self.executing=False
+   c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
+   try:
+      self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+   except:
+      pass
+   try:
+      c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
+   except:
+      pass
   except Exception as exc:
        self.executing=False
        raise Exception(exc)
-  self.executing=False
-  c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
-  try:
-      self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
-  except:
-      pass
-  try:
-      c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
-  except:
-      pass
   self.executing=False
   return c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
 
@@ -274,20 +274,16 @@ class session:
      else:#if the user just sending a new line
        self.telnet.write("\n".encode('utf-8'))
        c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=2)).strip()#read data until it receive the end of the prompt after executing the command
-    except Exception as exc:
-       self.executing=False
-       raise Exception(exc)
-    try:
+     try:
       self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
-    except:
+     except:
       pass
-    try:
+     try:
       c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
-    except:
+     except:
       pass
-    self.executing=False
-    c= c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
-    if c.strip()=="" and cmd.strip()!="":
+     c= c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
+     if c.strip()=="" and cmd.strip()!="":
       while True:#for some reason after sending the command, the telnet receive the prompt without any content so we have to keep sending new lines with intervals until we receive the command's output
        try:
         time.sleep(wait_check)
@@ -297,6 +293,10 @@ class session:
        except Exception as exc:
         self.executing=False
         raise Exception(exc)
+    except Exception as exc:
+       self.executing=False
+       raise Exception(exc)
+    self.executing=False
     return c
 
  def set_debug_level(self,level):
