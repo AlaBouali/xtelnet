@@ -183,23 +183,33 @@ class session:
   while(self.executing!=False):
       time.sleep(0.1)
   self.executing=True
+  cmd+=' '+path
   try:
-   self.telnet.write("{} {}".format(cmd+' '+path,new_line).encode('utf-8'))#send the command
+   self.telnet.write("{} {}".format(cmd,new_line).encode('utf-8'))#send the command
    d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout).strip()#read data until it receive the end of the prompt after executing the command
    c=escape_ansi(d)
-   self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
   except Exception as exc:
        self.executing=False
        raise Exception(exc)
+  c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
   self.executing=False
-  return ""
+  try:
+      self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+  except:
+      pass
+  try:
+      c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
+  except:
+      pass
+  self.executing=False
+  return c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
 
- def switch_terminal(self,command,new_line='\n',timeout=2):#change terminal type
+ def switch_terminal(self,cmd,new_line='\n',timeout=2):#change terminal type
   while(self.executing!=False):
       time.sleep(0.1)
   self.executing=True
   try:
-   self.telnet.write("{} {}".format(command,new_line).encode('utf-8'))#send the command
+   self.telnet.write("{} {}".format(cmd,new_line).encode('utf-8'))#send the command
    d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout).strip()#read data until it receive the end of the prompt after executing the command
    c=escape_ansi(d)
    self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
@@ -207,7 +217,17 @@ class session:
        self.executing=False
        raise Exception(exc)
   self.executing=False
-  return ""
+  c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
+  try:
+      self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+  except:
+      pass
+  try:
+      c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
+  except:
+      pass
+  self.executing=False
+  return c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
 
  def execute(self,cmd,new_line='\n',read_retries=15,wait_check=1):#this function executes any command and returns the output
     if self.prompt=='':
