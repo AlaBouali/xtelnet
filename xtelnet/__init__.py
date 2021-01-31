@@ -179,11 +179,35 @@ class session:
  def ping(self,new_line='\n'):#send empty string (new line) to keep the connection open: PING
   return self.execute('',new_line=new_line)
 
- def cwd(self,path,cmd='cd',new_line='\n'):#change working directory
-  return self.execute(cmd+' '+path,read_retries=1,new_line=new_line)
+ def cwd(self,path,cmd='cd',new_line='\n',timeout=2):#change working directory
+  while(self.executing!=False):
+      time.sleep(0.1)
+  self.executing=True
+  try:
+   self.telnet.write("{} {}".format(cmd+' '+path,new_line).encode('utf-8'))#send the command
+   d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout).strip()#read data until it receive the end of the prompt after executing the command
+   c=escape_ansi(d)
+   self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+  except Exception as exc:
+       self.executing=False
+       raise Exception(exc)
+  self.executing=False
+  return ""
 
- def switch_terminal(self,command,new_line='\n'):#change terminal type
-  return self.execute(command,read_retries=1,new_line=new_line)
+ def switch_terminal(self,command,new_line='\n',timeout=2):#change terminal type
+  while(self.executing!=False):
+      time.sleep(0.1)
+  self.executing=True
+  try:
+   self.telnet.write("{} {}".format(command,new_line).encode('utf-8'))#send the command
+   d=self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=timeout).strip()#read data until it receive the end of the prompt after executing the command
+   c=escape_ansi(d)
+   self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+  except Exception as exc:
+       self.executing=False
+       raise Exception(exc)
+  self.executing=False
+  return ""
 
  def execute(self,cmd,new_line='\n',read_retries=15,wait_check=1):#this function executes any command and returns the output
     if self.prompt=='':
@@ -191,13 +215,10 @@ class session:
     while(self.executing!=False):
       time.sleep(0.1)
     self.executing=True
-    if cmd!='':
+    try:
+     if cmd!='':
       c=''
-      try:
-       self.telnet.write("{} {}".format(cmd,new_line).encode('utf-8'))#send the command
-      except Exception as exc:
-       self.executing=False
-       raise Exception(exc)
+      self.telnet.write("{} {}".format(cmd,new_line).encode('utf-8'))#send the command
       read_fails=0
       while True:
        more_end=False
@@ -230,9 +251,12 @@ class session:
         c=cmd.strip().join(c.split(cmd.strip())[1:]).strip()#remove the command sent from output
        except:
         pass
-    else:#if the user just sending a new line
+     else:#if the user just sending a new line
        self.telnet.write("\n".encode('utf-8'))
        c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=2)).strip()#read data until it receive the end of the prompt after executing the command
+    except Exception as exc:
+       self.executing=False
+       raise Exception(exc)
     try:
       self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
     except:
@@ -244,11 +268,15 @@ class session:
     self.executing=False
     c= c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
     if c.strip()=="" and cmd.strip()!="":
-     while True:#for some reason after sending the command, the telnet receive the prompt without any content so we have to keep sending new lines with intervals until we receive the command's output
-      time.sleep(wait_check)
-      c=self.execute('',new_line=new_line)
-      if c.strip()!="":
-       break
+      while True:#for some reason after sending the command, the telnet receive the prompt without any content so we have to keep sending new lines with intervals until we receive the command's output
+       try:
+        time.sleep(wait_check)
+        c=self.execute('',new_line=new_line)
+        if c.strip()!="":
+         break
+       except Exception as exc:
+        self.executing=False
+        raise Exception(exc)
     return c
 
  def set_debug_level(self,level):
