@@ -73,7 +73,6 @@ class session:
    if (any(i in c.lower() for i in user_prompts)==False) and (any(i in c.lower() for i in password_prompts)==False):
      if (c[-1:] in prompt_end):#in case this is unauthenticated server
        self.prompt=(c.split("\r\n")[-1]).strip()
-       self.prompt_before=self.prompt
        c=None
      else:
        self.telnet.close()#close telnet connection
@@ -154,7 +153,6 @@ class session:
           raise Exception("Authentication Failed")#if login failed
        if (c[-1:] in prompt_end):#in case authentication succeeded
         self.prompt=(c.split("\r\n")[-1]).strip()
-        self.prompt_before=self.prompt
         c=None
         count=None
         return None
@@ -167,6 +165,7 @@ class session:
     self.no_authentication(u,p=p,timeout=timeout,debug_level=debug_level)#for unauthenticated server
   else:
     self.authentication(u,p=p,timeout=timeout,username=username,password=password,debug_level=debug_level)#for authenticated server
+  self.prompt_before=self.prompt
   self.connection_string="{}:{}:{}:{}".format(u,p,username,password)
   self.executing=False
   
@@ -261,14 +260,14 @@ class session:
 
  def destroy(self):#close the connection and destroy the connection string 
      self.close()
-     for x in self.__dict__:
-      self.__dict__[x]=None
+     self.connection_string=None
 
  def close(self):
      self.telnet.close()#close telnet connection
      self.telnet=None
      self.prompt=None
      self.executing=None
+     self.prompt_before=None
 
  def quit(self):
      self.execute("quit",read_retries=1)#logout of the telnet session
@@ -414,5 +413,8 @@ class multi_session:#this class is made to control multiple sessions in parallel
 
  def destroy(self):#destroy everything :) HAKAI !!!
     self.disconnect_all()
-    for x in self.__dict__:
-      self.__dict__[x]=None
+    self.sessions=None
+    self.counter=None
+    self.executing=None
+    self.connecting=None
+    self.executing=None
