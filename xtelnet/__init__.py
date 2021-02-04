@@ -284,15 +284,13 @@ class session:
       pass
      c= c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
      if c.strip()=="" and cmd.strip()!="":
-      while True:#for some reason after sending the command, the telnet receive the prompt without any content so we have to keep sending new lines with intervals until we receive the command's output
-       try:
-        time.sleep(wait_check)
-        c=self.execute('',new_line=new_line)
-        if c.strip()!="":
-         break
-       except Exception as exc:
-        self.executing=False
-        raise Exception(exc)
+      try:
+         self.executing=False
+         time.sleep(wait_check)    
+         c=self.execute('',new_line=new_line)
+      except Exception as exc:
+         self.executing=False
+         raise Exception(exc)
     except Exception as exc:
        self.executing=False
        raise Exception(exc)
