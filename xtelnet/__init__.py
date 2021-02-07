@@ -272,7 +272,7 @@ class session:
        except:
         pass
      else:#if the user just sending a new line
-       self.telnet.write("\n".encode('utf-8'))
+       self.telnet.write("{}".format(new_line).encode('utf-8'))
        c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=2)).strip()#read data until it receive the end of the prompt after executing the command
      try:
       self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
@@ -287,7 +287,7 @@ class session:
       try:
          #self.executing=False
          time.sleep(wait_check)
-         self.telnet.write("\n".encode('utf-8'))
+         self.telnet.write("{}".format(new_line).encode('utf-8'))
          c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=2)).strip()#read data until it receive the end of the prompt after executing the command
          try:
           self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
