@@ -283,11 +283,21 @@ class session:
      except:
       pass
      c= c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
-     if c.strip()=="" and cmd.strip()!="":
+     if c.strip()=="" and cmd.strip()!="":#sometimes the telnet don't send us a response and we need to send a '\n' to receive it
       try:
-         self.executing=False
-         time.sleep(wait_check)    
-         c=self.execute('',new_line=new_line)
+         #self.executing=False
+         time.sleep(wait_check)
+         self.telnet.write("\n".encode('utf-8'))
+         c=escape_ansi(self.telnet.read_until("{}".format(self.prompt).encode('utf-8'),timeout=2)).strip()#read data until it receive the end of the prompt after executing the command
+         try:
+          self.prompt=(c.split("\r\n")[-1]).strip()#update telnet prompt when changing directory or terminal type
+         except:
+          pass
+         try:
+          c="\r\n".join(c.split("\r\n")[:-1])#remove the prompt from output
+         except:
+          pass
+         c= c.replace(self.prompt,'').strip()#remove the prompt from output if "?" has been used
       except Exception as exc:
          self.executing=False
          raise Exception(exc)
