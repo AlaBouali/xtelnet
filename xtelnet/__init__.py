@@ -52,7 +52,7 @@ class session:
   self.connection_string=None
   self.executing=None
 
- def no_authentication(self,u,p=23,timeout=3,debug_level=0):#just keep reading the data to the last byte, then we look for the prompt 
+ def __no_authentication(self,u,p=23,timeout=3,debug_level=0):#just keep reading the data to the last byte, then we look for the prompt 
   try:
    if self.telnet:
        raise Exception("Already connected")
@@ -88,7 +88,7 @@ class session:
    self.telnet=None
    raise Exception("Timed out")
 
- def authentication(self,u,username="",password="",p=23,timeout=3,debug_level=0):
+ def __authentication(self,u,username="",password="",p=23,timeout=3,debug_level=0,new_line='\n'):
   try:
    usr=False
    if self.telnet:
@@ -111,13 +111,13 @@ class session:
         s=None
         c=None
         raise Exception("Authentication Failed")#so we don't get tricked into sending username multiple times after failure
-      self.telnet.write("{}\n".format(username).encode('utf-8'))#send username
+      self.telnet.write("{}{}".format(username,new_line).encode('utf-8'))#send username
       usr=True
     elif any(i in s.lower() for i in password_prompts)==True:#in case it asked for password
      if "<mypassword>" in s.lower():#cisco prompts can be tricky :) 2
          pass
      else:
-      self.telnet.write("{}\n".format(password).encode('utf-8'))#send password
+      self.telnet.write("{}{}".format(password,new_line).encode('utf-8'))#send password
       break
     elif any(i in s.lower() for i in enter_prompts)==True:
         self.telnet.write("\n".encode('utf-8'))#some anti-bot techniques requires sending "enter" after sending username/password
@@ -160,20 +160,20 @@ class session:
    self.telnet=None
    raise Exception("Timed out")
 
- def connect(self,u,username=None,password=None,p=23,timeout=3,debug_level=0):#connect to a given host
+ def connect(self,u,username=None,password=None,p=23,timeout=3,debug_level=0,new_line='\n'):#connect to a given host
   if (((username==None) or (username=="")) and ((password==None) or (password==""))):
-    self.no_authentication(u,p=p,timeout=timeout,debug_level=debug_level)#for unauthenticated server
+    self.__no_authentication(u,p=p,timeout=timeout,debug_level=debug_level)#for unauthenticated server
   else:
-    self.authentication(u,p=p,timeout=timeout,username=username,password=password,debug_level=debug_level)#for authenticated server
+    self.__authentication(u,p=p,timeout=timeout,username=username,password=password,debug_level=debug_level,new_line=new_line)#for authenticated server
   self.prompt_before=self.prompt
   self.connection_string="{}:{}:{}:{}".format(u,p,username,password)
   self.executing=False
   
- def reconnect(self,debug_level=0,timeout=3):#do reconnect if connection is lost and we didn't call "destroy" function of the object
+ def reconnect(self,debug_level=0,timeout=3,new_line='\n'):#do reconnect if connection is lost and we didn't call "destroy" function of the object
   if self.telnet:
    self.close()
   l=self.connection_string.split(':')
-  self.connect(l[0],p=int(l[1]),username=l[2],password=l[3],timeout=timeout,debug_level=debug_level)
+  self.connect(l[0],p=int(l[1]),username=l[2],password=l[3],timeout=timeout,debug_level=debug_level,new_line=new_line)
   l=None
 
  def ping(self,new_line='\n'):#send empty string (new line) to keep the connection open: PING
@@ -313,6 +313,12 @@ class session:
  def interact(self):#this function start a direct interactive telnet session
      self.telnet.write("\n".encode('utf-8'))
      self.telnet.interact()
+ 
+ def get_socket(self):
+  return self.telnet.get_socket()
+ 
+ def get_telnet(self):
+  return self.telnet
 
  def destroy(self):#close the connection and destroy the connection string 
      self.close()
@@ -341,8 +347,8 @@ class session:
 
 
 
-def dict_host(u,username=None,password=None,p=23,timeout=3):#this function takes those values and return a dict which contains all necessary information to create a telnet session using those following class
-  return {"host":u,"username":username,"password":password,"port":p,"timeout":timeout}
+def dict_host(u,username=None,password=None,p=23,timeout=3,new_line='\n'):#this function takes those values and return a dict which contains all necessary information to create a telnet session using those following class
+  return {"host":u,"username":username,"password":password,"port":p,"timeout":timeout,"new_line":new_line}
 
 
 
@@ -350,12 +356,11 @@ def dict_host(u,username=None,password=None,p=23,timeout=3):#this function takes
 
 class multi_session:#this class is made to control multiple sessions in parallel 
 
- __slots__=["sessions","counter","executing","connecting","executing"]
+ __slots__=["sessions","counter","executing","connecting"]
 
  def __init__(self):
   self.sessions={}#a dict to save telnet sessions with this format: { ip : <telnet session object> }
   self.counter=None
-  self.executing=None
   self.connecting=False
   self.executing=False
 
@@ -377,7 +382,7 @@ class multi_session:#this class is made to control multiple sessions in parallel
  def connect_to_host(self,host,error):#connect to a single host it takes the "host_dict" 's returned value and save the ip and the session on the "self.sessions" variable 
   try:
    t=session()
-   t.connect(host["host"],p=int(host["port"]),timeout=int(host["timeout"]),username=host["username"],password=host["password"])
+   t.connect(host["host"],p=int(host["port"]),timeout=int(host["timeout"]),username=host["username"],password=host["password"],new_line=host["new_line"])
    self.sessions.update({host["host"]:t})
   except Exception as e:
    if error==True:
@@ -473,4 +478,3 @@ class multi_session:#this class is made to control multiple sessions in parallel
     self.counter=None
     self.executing=None
     self.connecting=None
-    self.executing=None
