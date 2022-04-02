@@ -1,18 +1,20 @@
 import sys
-if  sys.version_info < (3,0):
-    input=raw_input
+
+if sys.version_info < (3, 0):
+    input = raw_input
 from .__init__ import *
-c=sys.argv
-user=""
-pwd=""
-host=""
-port=23
-timeout=5
-read_retries=15
-commands=[]
-new_line="\n"
-shell=True
-usage="""
+
+c = sys.argv
+user = ""
+pwd = ""
+host = ""
+port = 23
+timeout = 5
+read_retries = 15
+commands = []
+new_line = "\n"
+shell = True
+usage = """
 
 usage: xtelnet host [options...]
 
@@ -38,65 +40,71 @@ xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5
 xtelnet 127.0.0.1 -username root -password root -port 2323 -timeout 5 --no-shell
 
 """
-if len(c)<2:
+if len(c) < 2:
     print(usage)
     sys.exit()
-host=c[1]
-i=0
-while(i<(len(c))):
-    x=c[i]
-    if (x=="--help"):
+host = c[1]
+i = 0
+while i < (len(c)):
+    x = c[i]
+    if x == "--help":
         print(usage)
         sys.exit()
-    if (x=="-port"):
-        port=int(c[i+1])
-        i+=1
-    if (x=="-timeout"):
-        timeout=int(c[i+1])
-        i+=1
-    if (x=="-username"):
-        user=c[i+1]
-        i+=1
-    if (x=="-password"):
-        pwd=c[i+1]
-        i+=1
-    if (x=="--read-retries"):
-        read_retries=int(c[i+1])
-        i+=1
-    if (x=="--no-shell"):
-        shell=False
-    if (x=="--add-command"):
-     commands.append(c[i+1])
-     i+=1
-    if (x=="--set-newline"):
-        command_timeout=c[i+1]
-        i+=1
-    i+=1
-if host=='':
+    if x == "-port":
+        port = int(c[i + 1])
+        i += 1
+    if x == "-timeout":
+        timeout = int(c[i + 1])
+        i += 1
+    if x == "-username":
+        user = c[i + 1]
+        i += 1
+    if x == "-password":
+        pwd = c[i + 1]
+        i += 1
+    if x == "--read-retries":
+        read_retries = int(c[i + 1])
+        i += 1
+    if x == "--no-shell":
+        shell = False
+    if x == "--add-command":
+        commands.append(c[i + 1])
+        i += 1
+    if x == "--set-newline":
+        command_timeout = c[i + 1]
+        i += 1
+    i += 1
+if host == "":
     print("You need to set a host to connect to!!!")
     sys.exit()
-if len(commands)>0:
-    shell=False
+if len(commands) > 0:
+    shell = False
+
+
 def run():
- t=session()
- try:
-  t.connect(host,username=user,password=pwd,timeout=timeout,p=port)
-  if len(commands)>0:
-   for x in commands:
-     print(t.prompt+str(x))
-     print(str(t.execute(x,new_line=new_line,read_retries=read_retries)))
-   t.close()
-  if shell==True:
-   while True:
-      cmd=input(t.prompt)
-      if ((cmd.lower().strip()=="exit") or (cmd.lower().strip()=="logout") or (cmd.lower().strip()=="quit")):
-          t.close()
-          sys.exit()
-      output=t.execute(cmd,new_line=new_line,read_retries=read_retries)
-      if output==None:
-        output=''
-      if output!='':
-       print(output)
-   t.close()
- except Exception as e:
-     print("[-]Error: "+str(e))
+    t = session()
+    try:
+        t.connect(host, username=user, password=pwd, timeout=timeout, p=port)
+        if len(commands) > 0:
+            for x in commands:
+                print(t.prompt + str(x))
+                print(str(t.execute(x, new_line=new_line, read_retries=read_retries)))
+            t.close()
+        if shell == True:
+            while True:
+                cmd = input(t.prompt)
+                if (
+                    (cmd.lower().strip() == "exit")
+                    or (cmd.lower().strip() == "logout")
+                    or (cmd.lower().strip() == "quit")
+                ):
+                    t.close()
+                    sys.exit()
+                output = t.execute(cmd, new_line=new_line, read_retries=read_retries)
+                if output == None:
+                    output = ""
+                if output != "":
+                    print(output)
+            t.close()
+    except Exception as e:
+        print("[-]Error: " + str(e))
