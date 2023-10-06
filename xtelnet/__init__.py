@@ -1,4 +1,4 @@
-import telnetlib, socket, re, threading, time
+import telnetlib, socket, re, threading, time,socks
 
 # if the default method didn't work out, then change the values inside those lists to reach your goal!!!
 
@@ -81,10 +81,41 @@ def escape_ansi(line):  # this function escape all ANSI characters in any given 
     ).sub("", line.decode("utf-8", "ignore"))
 
 
+
+def get_socks_proxy_socket(host,port,proxy_host,proxy_port,proxy_type,username=None,password=None,timeout=5):
+    try:
+        s = socks.socksocket()
+        s.settimeout(timeout)
+        if proxy_type==4:
+            s.setproxy( 
+                    proxy_type=socks.SOCKS4,
+                    addr=proxy_host,
+                    port=proxy_port,
+                    username=username,
+                    password=password,
+                )
+        elif proxy_type==5:
+            s.setproxy( 
+                    proxy_type=socks.SOCKS5,
+                    addr=proxy_host,
+                    port=proxy_port,
+                    username=username,
+                    password=password,
+                )
+        s.connect((host,port))
+        return s
+    except:
+        return
+
+
+
+
 def get_banner(
-    u, p=23, timeout=3, payload=None
+    u, p=23, timeout=3, payload=None,proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
 ):  # this function is to grab banners only
-    telnet = telnetlib.Telnet(u, p, timeout=timeout)
+    sock=get_socks_proxy_socket(u,p,proxy_host,proxy_port,proxy_type,username=proxy_username,password=proxy_password,timeout=timeout)
+    telnet = telnetlib.Telnet()
+    telnet.sock = sock
     if payload:
         telnet.write(
             "{}".format(payload).encode("utf-8")
@@ -116,12 +147,14 @@ class session:
         self.executing = None
 
     def __no_authentication(
-        self, u, p=23, timeout=3, debug_level=0
+        self, u, p=23, timeout=3, debug_level=0, proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
     ):  # just keep reading the data to the last byte, then we look for the prompt
         try:
             if self.telnet:
                 raise Exception("Already connected")
-            self.telnet = telnetlib.Telnet(u, p, timeout=timeout)
+            sock=get_socks_proxy_socket(u,p,proxy_host,proxy_port,proxy_type,username=proxy_username,password=proxy_password,timeout=timeout)
+            self.telnet = telnetlib.Telnet()
+            self.telnet.sock = sock
             self.set_debug_level(debug_level)
             c = ""
             while True:
@@ -158,13 +191,15 @@ class session:
             raise Exception("Timed out")
 
     def __authentication(
-        self, u, username="", password="", p=23, timeout=3, debug_level=0, new_line="\n"
+        self, u, username="", password="", p=23, timeout=3, debug_level=0, new_line="\n", proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
     ):
         try:
             usr = False
             if self.telnet:
                 raise Exception("Already connected")
-            self.telnet = telnetlib.Telnet(u, p, timeout=timeout)
+            sock=get_socks_proxy_socket(u,p,proxy_host,proxy_port,proxy_type,username=proxy_username,password=proxy_password,timeout=timeout)
+            self.telnet = telnetlib.Telnet()
+            self.telnet.sock = sock
             self.set_debug_level(debug_level)
             while True:
                 m = self.telnet.expect(
@@ -256,12 +291,25 @@ class session:
         timeout=3,
         debug_level=0,
         new_line="\n",
+        proxy_type=None,
+        proxy_host=None,
+        proxy_port=None,
+        proxy_username=None, 
+        proxy_password=None
     ):  # connect to a given host
         if ((username == None) or (username == "")) and (
             (password == None) or (password == "")
         ):
             self.__no_authentication(
-                u, p=p, timeout=timeout, debug_level=debug_level
+                u, 
+                p=p,
+                timeout=timeout, 
+                debug_level=debug_level, 
+                proxy_type=proxy_type,
+                proxy_host=proxy_host,
+                proxy_port=proxy_port,
+                proxy_username=proxy_username, 
+                proxy_password=proxy_password
             )  # for unauthenticated server
         else:
             self.__authentication(
@@ -272,6 +320,12 @@ class session:
                 password=password,
                 debug_level=debug_level,
                 new_line=new_line,
+                proxy_type=proxy_type,
+                proxy_host=proxy_host,
+                proxy_port=proxy_port,
+                proxy_username=proxy_username,
+                proxy_password=proxy_password
+
             )  # for authenticated server
         self.prompt_before = self.prompt
         self.connection_string = "{}:{}:{}:{}".format(u, p, username, password)
