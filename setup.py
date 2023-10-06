@@ -3,7 +3,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name="xtelnet",
-    version="2.1.1",
+    version="2.1.4",
     author="AlaBouali",
     author_email="trap.leader.123@gmail.com",
     description="simple telnet module",
@@ -12,7 +12,7 @@ setuptools.setup(
     url="https://github.com/AlaBouali/xtelnet",
     packages=["xtelnet"],
     python_requires=">=2.7",
-    install_requires=[],
+    install_requires=['PySocks'],
     license="MIT License",
     entry_points={
        'console_scripts': [
