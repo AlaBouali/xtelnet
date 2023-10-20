@@ -86,7 +86,7 @@ def get_socks_proxy_socket(host,port,proxy_host,proxy_port,proxy_type,username=N
     try:
         s = socks.socksocket()
         s.settimeout(timeout)
-        if proxy_type==4:
+        if proxy_type in [4,'s4','socks4'] :
             s.setproxy( 
                     proxy_type=socks.SOCKS4,
                     addr=proxy_host,
@@ -94,7 +94,7 @@ def get_socks_proxy_socket(host,port,proxy_host,proxy_port,proxy_type,username=N
                     username=username,
                     password=password,
                 )
-        elif proxy_type==5:
+        elif proxy_type in [5,'s5','socks5']:
             s.setproxy( 
                     proxy_type=socks.SOCKS5,
                     addr=proxy_host,
