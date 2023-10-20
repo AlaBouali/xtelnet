@@ -49,7 +49,7 @@ t<span style="color: #333333">.</span>ping()<span style="color: #888888">#send n
 t<span style="color: #333333">.</span>destroy()<span style="color: #888888">#close the connection and remove the connection string totally, after this you can&#39;t do &quot;reconnect&quot;</span>
 t<span style="color: #333333">.</span>destroy()<span style="color: #888888">#close the connection and remove the connection string totally, after this you can&#39;t do &quot;reconnect&quot;</span>
 </pre></div>
-<div style="background: #f8f8f8; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%">bane.connect('114.35.81.134',proxy_type=5,proxy_host='localhost',proxy_port=9150,proxy_username='user',proxy_password='pass')#use SOCKS5 proxy to connect, set 'proxy_type' to 4 to use SOCKS4 
+<div style="background: #f8f8f8; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%">t.connect('114.35.81.134',proxy_type=5,proxy_host='localhost',proxy_port=9150,proxy_username='user',proxy_password='pass')#use SOCKS5 proxy to connect, set 'proxy_type' to 4 to use SOCKS4 
 </pre></div>
 
 
