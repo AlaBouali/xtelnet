@@ -129,6 +129,35 @@ def get_socks_proxy_socket(host,port,proxy_host,proxy_port,proxy_type,username=N
 
 
 
+
+def get_socks_proxy_socket(host,port,proxy_host,proxy_port,proxy_type,username=None,password=None,timeout=5):
+    try:
+        s = socks.socksocket()
+        s.settimeout(timeout)
+        if proxy_type in [4,'s4','socks4'] :
+            s.setproxy( 
+                    proxy_type=socks.SOCKS4,
+                    addr=proxy_host,
+                    port=proxy_port,
+                    username=username,
+                    password=password,
+                )
+        elif proxy_type in [5,'s5','socks5']:
+            s.setproxy( 
+                    proxy_type=socks.SOCKS5,
+                    addr=proxy_host,
+                    port=proxy_port,
+                    username=username,
+                    password=password,
+                )
+        s.connect((host,port))
+        return s
+    except:
+        return
+
+
+
+
 def get_banner(
     u, p=23, timeout=3, payload=None,proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
 ):  # this function is to grab banners only
