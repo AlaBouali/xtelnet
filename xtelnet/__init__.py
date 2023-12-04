@@ -1,4 +1,6 @@
-import telnetlib, socket, re, threading, time
+import telnetlib, socket, re, threading, time,socks,ssl
+
+__version__="2.1.7"
 
 # if the default method didn't work out, then change the values inside those lists to reach your goal!!!
 
@@ -78,13 +80,61 @@ prompt_end = ["$", "#", ">", "%", "]"]
 def escape_ansi(line):  # this function escape all ANSI characters in any given string
     return re.compile(
         r"(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])"
-    ).sub("", line.decode("utf-8", "ignore"))
+    ).sub("", line.decode("utf-8", "ignore")).strip()
+
+
+
+def wrap_socket_with_ssl(sock,target_host):
+        if sock==None:
+            return
+        if hasattr(ssl, 'PROTOCOL_TLS_CLIENT'):
+            # Since Python 3.6
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        elif hasattr(ssl, 'PROTOCOL_TLS'):
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        else:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)#ssl.PROTOCOL_TLS)
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        return ssl_context.wrap_socket(sock, server_hostname=target_host)
+
+
+def get_socks_proxy_socket(host,port,proxy_host,proxy_port,proxy_type,username=None,password=None,timeout=5,use_ssl=False):
+    try:
+        s = socks.socksocket()
+        s.settimeout(timeout)
+        if proxy_type in [4,'s4','socks4'] :
+            s.setproxy( 
+                    proxy_type=socks.SOCKS4,
+                    addr=proxy_host,
+                    port=proxy_port,
+                    username=username,
+                    password=password,
+                )
+        elif proxy_type in [5,'s5','socks5']:
+            s.setproxy( 
+                    proxy_type=socks.SOCKS5,
+                    addr=proxy_host,
+                    port=proxy_port,
+                    username=username,
+                    password=password,
+                )
+        s.connect((host,port))
+        if use_ssl==False:
+            return s
+        return wrap_socket_with_ssl(s,host)
+    except:
+        return
+
+
 
 
 def get_banner(
-    u, p=23, timeout=3, payload=None
+    u, p=23, timeout=3, payload=None,proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
 ):  # this function is to grab banners only
-    telnet = telnetlib.Telnet(u, p, timeout=timeout)
+    sock=get_socks_proxy_socket(u,p,proxy_host,proxy_port,proxy_type,username=proxy_username,password=proxy_password,timeout=timeout)
+    telnet = telnetlib.Telnet()
+    telnet.sock = sock
     if payload:
         telnet.write(
             "{}".format(payload).encode("utf-8")
@@ -115,13 +165,21 @@ class session:
         self.connection_string = None
         self.executing = None
 
+    def set_prompt_before(self,prompt_before):
+        self.prompt_before=prompt_before
+
+    def set_prompt(self,prompt):
+        self.prompt=prompt
+
     def __no_authentication(
-        self, u, p=23, timeout=3, debug_level=0
+        self, u, p=23, timeout=3, debug_level=0, proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
     ):  # just keep reading the data to the last byte, then we look for the prompt
         try:
             if self.telnet:
                 raise Exception("Already connected")
-            self.telnet = telnetlib.Telnet(u, p, timeout=timeout)
+            sock=get_socks_proxy_socket(u,p,proxy_host,proxy_port,proxy_type,username=proxy_username,password=proxy_password,timeout=timeout)
+            self.telnet = telnetlib.Telnet()
+            self.telnet.sock = sock
             self.set_debug_level(debug_level)
             c = ""
             while True:
@@ -136,6 +194,9 @@ class session:
                         )  # some anti-bot techniques requires sending "enter" after sending username/password
                 except:
                     break
+            if c.strip()=='':
+                self.telnet=None
+                raise Exception('Not a telnet service')
             d = None
             if (any(i in c.lower() for i in user_prompts) == False) and (
                 any(i in c.lower() for i in password_prompts) == False
@@ -158,18 +219,26 @@ class session:
             raise Exception("Timed out")
 
     def __authentication(
-        self, u, username="", password="", p=23, timeout=3, debug_level=0, new_line="\n"
+        self, u, username="", password="", p=23, timeout=3, debug_level=0, new_line="\n", proxy_type=None,proxy_host=None,proxy_port=None,proxy_username=None, proxy_password=None
     ):
         try:
             usr = False
             if self.telnet:
                 raise Exception("Already connected")
-            self.telnet = telnetlib.Telnet(u, p, timeout=timeout)
+            sock=get_socks_proxy_socket(u,p,proxy_host,proxy_port,proxy_type,username=proxy_username,password=proxy_password,timeout=timeout)
+            self.telnet = telnetlib.Telnet()
+            self.telnet.sock = sock
             self.set_debug_level(debug_level)
             while True:
-                m = self.telnet.expect(
-                    login_prompts, timeout=timeout
-                )  # expected login prompts
+                try:
+                    m = self.telnet.expect(
+                        login_prompts, timeout=timeout
+                    )  # expected login prompts
+                except Exception as ex:
+                    if 'Invalid file object' in str(ex):
+                        self.telnet=None
+                        m=None
+                        raise Exception("Not a telnet service")
                 s = m[2]
                 m = None
                 s = escape_ansi(s)
@@ -228,7 +297,7 @@ class session:
                         self.telnet = None
                         c = None
                         count = None
-                        raise Exception("Authentication Failed")  # if login failed
+                        raise Exception("Not a telnet service")  # if login failed
                 if any(i in str(c).lower() for i in enter_prompts) == True:
                     self.telnet.write("\n".encode("utf-8"))
                 else:
@@ -256,12 +325,36 @@ class session:
         timeout=3,
         debug_level=0,
         new_line="\n",
+        proxy_type=None,
+        proxy_host=None,
+        proxy_port=None,
+        proxy_username=None, 
+        proxy_password=None
     ):  # connect to a given host
+        try:
+            s=socket.socket()
+            s.connect_ex((u,p))
+            try:
+                s.close()
+            except:
+                pass
+            s=None
+        except:
+            s=None
+            raise Exception("can't connect to the host")
         if ((username == None) or (username == "")) and (
             (password == None) or (password == "")
         ):
             self.__no_authentication(
-                u, p=p, timeout=timeout, debug_level=debug_level
+                u, 
+                p=p,
+                timeout=timeout, 
+                debug_level=debug_level, 
+                proxy_type=proxy_type,
+                proxy_host=proxy_host,
+                proxy_port=proxy_port,
+                proxy_username=proxy_username, 
+                proxy_password=proxy_password
             )  # for unauthenticated server
         else:
             self.__authentication(
@@ -272,6 +365,12 @@ class session:
                 password=password,
                 debug_level=debug_level,
                 new_line=new_line,
+                proxy_type=proxy_type,
+                proxy_host=proxy_host,
+                proxy_port=proxy_port,
+                proxy_username=proxy_username,
+                proxy_password=proxy_password
+
             )  # for authenticated server
         self.prompt_before = self.prompt
         self.connection_string = "{}:{}:{}:{}".format(u, p, username, password)
@@ -295,11 +394,13 @@ class session:
         l = None
 
     def ping(
-        self, new_line="\n"
+        self, new_line="\n",expected_prompt=None
     ):  # send empty string (new line) to keep the connection open: PING
-        return self.execute("", new_line=new_line)
+        return self.execute("", new_line=new_line,expected_prompt=expected_prompt)
 
-    def cwd(self, path, cmd="cd", new_line="\n", timeout=2):  # change working directory
+    def cwd(self, path, cmd="cd", new_line="\n", timeout=2,expected_prompt=None):  # change working directory
+        if expected_prompt==None:
+            expected_prompt=self.prompt
         while self.executing != False:
             time.sleep(0.1)
         self.executing = True
@@ -309,7 +410,7 @@ class session:
                 "{} {}".format(cmd, new_line).encode("utf-8")
             )  # send the command
             d = self.telnet.read_until(
-                "{}".format(self.prompt).encode("utf-8"), timeout=timeout
+                "{}".format(expected_prompt).encode("utf-8"), timeout=timeout
             ).strip()  # read data until it receive the end of the prompt after executing the command
             c = escape_ansi(d)
             c = (
@@ -334,7 +435,9 @@ class session:
             self.prompt, ""
         ).strip()  # remove the prompt from output if "?" has been used
 
-    def switch_terminal(self, cmd, new_line="\n", timeout=2):  # change terminal type
+    def switch_terminal(self, cmd, new_line="\n", timeout=2,expected_prompt=None):  # change terminal type
+        if expected_prompt==None:
+            expected_prompt=self.prompt
         while self.executing != False:
             time.sleep(0.1)
         self.executing = True
@@ -343,7 +446,7 @@ class session:
                 "{} {}".format(cmd, new_line).encode("utf-8")
             )  # send the command
             d = self.telnet.read_until(
-                "{}".format(self.prompt).encode("utf-8"), timeout=timeout
+                "{}".format(expected_prompt).encode("utf-8"), timeout=timeout
             ).strip()  # read data until it receive the end of the prompt after executing the command
             c = escape_ansi(d)
             self.prompt = (
@@ -372,10 +475,12 @@ class session:
         ).strip()  # remove the prompt from output if "?" has been used
 
     def execute(
-        self, cmd, new_line="\n", read_retries=15, wait_check=1
+        self, cmd, new_line="\n", read_retries=5, wait_check=1,expected_prompt=None
     ):  # this function executes any command and returns the output
         if self.prompt == "":
             self.prompt = self.prompt_before
+        if expected_prompt==None:
+            expected_prompt=self.prompt
         while self.executing != False:
             time.sleep(0.1)
         self.executing = True
@@ -383,16 +488,16 @@ class session:
             if cmd != "":
                 c = ""
                 self.telnet.write(
-                    "{} {}".format(cmd, new_line).encode("utf-8")
+                    "{}{}".format(cmd, new_line).encode("utf-8")
                 )  # send the command
                 read_fails = 0
                 while True:
                     more_end = False
                     d = self.telnet.read_until(
-                        "{}".format(self.prompt).encode("utf-8"), timeout=1
+                        "{}".format(expected_prompt).encode("utf-8"), timeout=1
                     ).strip()  # read data until it receive the end of the prompt after executing the command
                     c += escape_ansi(d)
-                    if str(self.prompt) in str(d):
+                    if str(expected_prompt) in str(d):
                         break
                     if len(d) == 0:
                         read_fails += 1
@@ -403,7 +508,7 @@ class session:
                             self.telnet.write("{}".format(new_line).encode("utf-8"))
                             o = self.telnet.read_until(b"---- More ----", timeout=1)
                             d += o
-                            if str(self.prompt) in str(o):
+                            if str(expected_prompt) in str(o):
                                 more_end = True
                                 break
                         o = None
@@ -425,9 +530,10 @@ class session:
                 self.telnet.write("{}".format(new_line).encode("utf-8"))
                 c = escape_ansi(
                     self.telnet.read_until(
-                        "{}".format(self.prompt).encode("utf-8"), timeout=2
+                        "{}".format(expected_prompt).encode("utf-8"), timeout=2
                     )
                 ).strip()  # read data until it receive the end of the prompt after executing the command
+            data=c
             try:
                 self.prompt = (
                     c.split("\r\n")[-1]
@@ -450,7 +556,7 @@ class session:
                     self.telnet.write("{}".format(new_line).encode("utf-8"))
                     c = escape_ansi(
                         self.telnet.read_until(
-                            "{}".format(self.prompt).encode("utf-8"), timeout=2
+                            "{}".format(expected_prompt).encode("utf-8"), timeout=2
                         )
                     ).strip()  # read data until it receive the end of the prompt after executing the command
                     try:
@@ -474,7 +580,11 @@ class session:
         except Exception as exc:
             self.executing = False
             raise Exception(exc)
+        if self.prompt=='':
+            self.prompt=self.prompt_before
         self.executing = False
+        if c=='':
+            return data
         return c
 
     def set_debug_level(self, level):
@@ -585,7 +695,7 @@ class multi_session:  # this class is made to control multiple sessions in paral
         return self.all_execute("", new_line=new_line)
 
     def all_execute(
-        self, cmd, read_retries=15, new_line="\n", error_logs=False
+        self, cmd, read_retries=5, new_line="\n", error_logs=False
     ):  # execute the "cmd" on all hosts in "self.sessions"
         while self.executing != False:
             time.sleep(0.1)
@@ -616,7 +726,7 @@ class multi_session:  # this class is made to control multiple sessions in paral
             raise Exception(exc)
 
     def some_execute(
-        self, h, cmd, read_retries=15, new_line="\n", error_logs=False
+        self, h, cmd, read_retries=5, new_line="\n", error_logs=False
     ):  # execute the "cmd" on some hosts in "self.sessions" whom are passed as a list ("h" parameter)
         while self.executing != False:
             time.sleep(0.1)
@@ -647,7 +757,7 @@ class multi_session:  # this class is made to control multiple sessions in paral
             raise Exception(exc)
 
     def host_execute(
-        self, h, cmd, read_retries=15, new_line="\n", error_logs=False
+        self, h, cmd, read_retries=5, new_line="\n", error_logs=False, expected_prompt=None
     ):  # execute the "cmd" on a single host in "self.sessions" which is passed as a string ("h" parameter)
         while self.executing != False:
             time.sleep(0.1)
@@ -655,7 +765,7 @@ class multi_session:  # this class is made to control multiple sessions in paral
         logs = {}
         self.counter = 0
         try:
-            self.run_command(h, cmd, read_retries, logs, error_logs, new_line)
+            self.run_command(h, cmd, read_retries, logs, error_logs, new_line, expected_prompt=expected_prompt)
             self.counter = None
             self.executing = False
             return logs
@@ -664,12 +774,12 @@ class multi_session:  # this class is made to control multiple sessions in paral
             raise Exception(exc)
 
     def run_command(
-        self, h, cmd, read_retries, log, error, newline
+        self, h, cmd, read_retries, log, error, newline, expected_prompt=None
     ):  # execute the "cmd" on a single host which is passed as a string ("h" parameter)
         try:
             r = ""
             t = self.sessions[h]
-            r = t.execute(cmd, read_retries=read_retries, new_line=newline)
+            r = t.execute(cmd, read_retries=read_retries, new_line=newline, expected_prompt=expected_prompt)
         except Exception as e:
             if error == True:
                 print("{} : {}".format(h, str(e)))
