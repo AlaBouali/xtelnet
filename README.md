@@ -1,5 +1,5 @@
 # xtelnet
-This is an easy to use telnet module to interact with a remote system smoothly over this protocol!
+This is an easy to use telnet module to interact with a remote system smoothly over this protocol!It is a very minimalistic alterative to "telnetlib".
 
 # Why should I use xtelnet?
 

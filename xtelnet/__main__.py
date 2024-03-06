@@ -82,13 +82,12 @@ if len(commands) > 0:
 
 
 def run():
-    t = session()
+    t = Telnet_Session()
     try:
-        t.connect(host, username=user, password=pwd, timeout=timeout, p=port)
+        t.connect(host, username=user, password=pwd, timeout=timeout, port=port,debug=True)
         if len(commands) > 0:
             for x in commands:
-                print(t.prompt + str(x))
-                print(str(t.execute(x, new_line=new_line, read_retries=read_retries)))
+                t.execute(x)
             t.close()
         if shell == True:
             while True:
@@ -100,7 +99,7 @@ def run():
                 ):
                     t.close()
                     sys.exit()
-                output = t.execute(cmd, new_line=new_line, read_retries=read_retries)
+                output = t.execute(cmd)
                 if output == None:
                     output = ""
                 if output != "":
