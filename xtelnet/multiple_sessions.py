@@ -16,7 +16,7 @@ class Multi_Telnet_Session:  # this class is made to control multiple sessions i
 
     def connect(
         self, hosts, error_logs=False
-    ):  # this function takes a list ("hosts" parameter) each element as a dict created by the function "dict_host" and use the information stored on it to create a session object for each ip
+    ):  # this function takes a list ("hosts" parameter) each element as a dict created by the function "Telnet_Session.setup_host_configs" and use the information stored on it to create a session object for each ip
         while self.connecting != False:
             time.sleep(0.1)
         self.connecting = True
