@@ -37,6 +37,7 @@ or
 <div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> <span style="color: #0e84b5; font-weight: bold">xtelnet</span>
 t<span style="color: #333333">=</span>xtelnet<span style="color: #333333">.</span>Telnet_Session()
 ip<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;192.168.0.32&#39;</span><span style="color: #888888">#just an example</span>
+# if you are using "stupid" tcp servers, just set "allow_raw_tcp" parameter in "connect" method to true and it will stream everything over TCP
 t<span style="color: #333333">.</span>connect(ip, username<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;root&#39;</span>,password<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;toor&#39;</span>,port<span style="color: #333333">=</span><span style="color: #0000DD; font-weight: bold">23</span>,timeout<span style="color: #333333">=</span><span style="color: #0000DD; font-weight: bold">5</span>)
 output1<span style="color: #333333">=</span>t<span style="color: #333333">.</span>execute(<span style="background-color: #fff0f0">&#39;echo ala_is_king&#39;</span>,timeout=5,buffer_read_timeout=2,remove_prompt_from_output=True,max_empty_buffers=3)
 <span style="color: #008800; font-weight: bold">print</span>(output1)
