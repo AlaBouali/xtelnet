@@ -41,7 +41,7 @@ class Telnet_Session:
         self.prompt=None
         self.sock=None
 
-    def connect(self,host,login_timeout=60,timeout=3,username='',allow_raw_tcp=False,password='',new_line='\n',debug=True,**kwargs):
+    def connect(self,host,login_timeout=60,timeout=3,username='',allow_raw_tcp=False,password='',new_line='\n',debug=False,**kwargs):
         self.host=host
         self.connection_configs=kwargs
         self.username=username
@@ -121,7 +121,7 @@ class Telnet_Session:
             if len(d)==0:
                 empty_buffers+=1
             #print(d)
-            if empty_buffers==max_empty_buffers:
+            if empty_buffers>=max_empty_buffers:
                 break
             d=Socket_Connection.send_data(self.sock,data=None,timeout=buffer_read_timeout,new_line=self.new_line,debug=self.debug)
             data+=d
@@ -159,15 +159,15 @@ class Telnet_Session:
         self.prompt=None
     
     def quit(self):
-        self.execute("quit", read_retries=1)  # logout of the telnet session
+        self.execute("quit", max_empty_buffers=0)  # logout of the telnet session
         self.close()  # close telnet connection
 
     def logout(self):
-        self.execute("logout", read_retries=1)  # logout of the telnet session
+        self.execute("logout", max_empty_buffers=0)  # logout of the telnet session
         self.close()  # close telnet connection
 
     def exit(self):
-        self.execute("exit", read_retries=1)  # exit the telnet session
+        self.execute("exit", max_empty_buffers=0)  # exit the telnet session
         self.close()  # close telnet connection
     
     def reconnect(self,**kwargs):
