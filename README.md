@@ -37,14 +37,11 @@ or
 <div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> <span style="color: #0e84b5; font-weight: bold">xtelnet</span>
 t<span style="color: #333333">=</span>xtelnet<span style="color: #333333">.</span>Telnet_Session()
 ip<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;192.168.0.32&#39;</span><span style="color: #888888">#just an example</span>
-t<span style="color: #333333">.</span>connect(ip, username<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;root&#39;</span>,password<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;toor&#39;</span>,p<span style="color: #333333">=</span><span style="color: #0000DD; font-weight: bold">23</span>,timeout<span style="color: #333333">=</span><span style="color: #0000DD; font-weight: bold">5</span>)
+t<span style="color: #333333">.</span>connect(ip, username<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;root&#39;</span>,password<span style="color: #333333">=</span><span style="background-color: #fff0f0">&#39;toor&#39;</span>,port<span style="color: #333333">=</span><span style="color: #0000DD; font-weight: bold">23</span>,timeout<span style="color: #333333">=</span><span style="color: #0000DD; font-weight: bold">5</span>)
 output1<span style="color: #333333">=</span>t<span style="color: #333333">.</span>execute(<span style="background-color: #fff0f0">&#39;echo ala_is_king&#39;</span>,timeout=3)
 <span style="color: #008800; font-weight: bold">print</span>(output1)
 output2<span style="color: #333333">=</span>t<span style="color: #333333">.</span>execute(<span style="background-color: #fff0f0">&#39;cd / &amp;&amp; ls&#39;</span>)
 <span style="color: #008800; font-weight: bold">print</span>(output2)
-t<span style="color: #333333">.</span>cwd(<span style="background-color: #fff0f0">&#39;/&#39;</span>)<span style="color: #888888">#change working directory</span>
-t<span style="color: #333333">.</span>switch_terminal(<span style="background-color: #fff0f0">&#39;tclsh&#39;</span>)<span style="color: #888888">#change terminal type where the prompt will get changed as well (just and example of command to do it on some routers)</span>
-t<span style="color: #333333">.</span>switch_terminal(<span style="background-color: #fff0f0">&#39;tclquit&#39;</span>)
 t<span style="color: #333333">.</span>close()<span style="color: #888888">#close the connection but keep the connection string to do reconnect later</span>
 t<span style="color: #333333">.</span>reconnect()<span style="color: #888888">#reconnect to the host with the previous parameters</span>
 t<span style="color: #333333">.</span>ping()<span style="color: #888888">#send new line to the host to keep the connectio open</span>
