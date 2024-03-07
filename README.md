@@ -1,5 +1,5 @@
 # xtelnet
-This is an easy to use telnet module to interact with a remote system smoothly over this protocol!It is a very minimalistic alterative to "telnetlib".
+This is an easy to use telnet module to interact with a remote system smoothly over this protocol! It is a very minimalistic alterative to "telnetlib". xtelnet is a powerful and user-friendly Python library designed for managing Telnet sessions with ease and efficiency. With its intuitive interface and robust functionality, xtelnet simplifies the process of interacting with Telnet servers, offering a range of features for seamless communication. xtelnet offers a comprehensive solution for Telnet communication, providing developers with the tools they need to effectively manage Telnet sessions and interact with remote systems. Whether you're a seasoned developer or new to Telnet protocols, xtelnet empowers you to achieve your goals efficiently and reliably.
 
 # Why should I use xtelnet?
 
