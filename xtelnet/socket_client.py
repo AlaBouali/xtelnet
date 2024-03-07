@@ -80,6 +80,7 @@ class Socket_Connection:
             r"(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])"
         ).sub("", line.decode("utf-8", "ignore")).strip()
 
+    @staticmethod
     def get_banner(
     host, payload=None, **kwargs
 ):  # this function is to grab banners only
