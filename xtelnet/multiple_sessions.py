@@ -7,9 +7,7 @@ class Multi_Telnet_Session:  # this class is made to control multiple sessions i
     __slots__ = ["sessions", "counter", "executing", "connecting"]
 
     def __init__(self):
-        self.sessions = (
-            {}
-        )  # a dict to save telnet sessions with this format: { ip : <telnet session object> }
+        self.sessions = {}  # a dict to save telnet sessions with this format: { ip : <telnet session object> }
         self.counter = None
         self.connecting = False
         self.executing = False
