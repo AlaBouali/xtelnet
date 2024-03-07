@@ -85,6 +85,7 @@ class Socket_Connection:
     host, payload=None, **kwargs
 ):  # this function is to grab banners only
         sock=Socket_Connection.get_connection(host,**kwargs)
-        
-        return Socket_Connection.send_data(sock,payload,**kwargs) # in case we need to send any data to receive the banner
+        data = Socket_Connection.send_data(sock,payload,**kwargs)
+        sock.close()
+        return data
 
