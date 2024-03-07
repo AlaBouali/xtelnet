@@ -43,6 +43,8 @@ output1<span style="color: #333333">=</span>t<span style="color: #333333">.</spa
 output2<span style="color: #333333">=</span>t<span style="color: #333333">.</span>execute(<span style="background-color: #fff0f0">&#39;cd / &amp;&amp; ls&#39;</span>)
 <span style="color: #008800; font-weight: bold">print</span>(output2)
 t<span style="color: #333333">.</span>close()<span style="color: #888888">#close the connection but keep the connection string to do reconnect later</span>
+t<span style="color: #333333">.</span>enable_debug()<span style="color: #888888"># enable debug mode</span>
+t<span style="color: #333333">.</span>disable_debug()<span style="color: #888888"># disable debug mode</span>
 t<span style="color: #333333">.</span>reconnect()<span style="color: #888888">#reconnect to the host with the previous parameters</span>
 t<span style="color: #333333">.</span>ping()<span style="color: #888888">#send new line to the host to keep the connectio open</span>
 t<span style="color: #333333">.</span>destroy()<span style="color: #888888">#close the connection and remove the connection string totally, after this you can&#39;t do &quot;reconnect&quot;</span>
