@@ -43,7 +43,7 @@ class Telnet_Session:
         self.sock=None
 
     # if you are using "stupid" tcp servers, just set "allow_raw_tcp" to true and it will stream everything over TCP
-    def connect(self,host,login_timeout=60,timeout=3,username='',allow_raw_tcp=False,password='',new_line='\n',debug=True,enable_negotiation=False,**kwargs):
+    def connect(self,host,login_timeout=60,timeout=3,username='',allow_raw_tcp=False,password='',new_line='\n',debug=False,enable_negotiation=False,**kwargs):
         if self.is_connected==True:
             raise Exception('Already connected to : {}'.format(host))
         self.host=host
