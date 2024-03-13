@@ -100,7 +100,7 @@ class Telnet_Session:
                 self.prompt=prompt
                 return
 
-    def execute(self,cmd,timeout=3,buffer_read_timeout=2,remove_prompt_from_output=True,max_empty_buffers=1,enable_negotiation=False):
+    def execute(self,cmd,timeout=3,read_until_match=None,buffer_read_timeout=2,remove_prompt_from_output=True,max_empty_buffers=1,enable_negotiation=False):
         """
         to put things in context:
             - cmd: the user's command
@@ -117,6 +117,9 @@ class Telnet_Session:
             else:
                 break
         self.is_executing=True
+        if read_until_match!=None:
+            self.just_execute(cmd)
+            return self.read_until(read_until_match,timeout=timeout)
         empty_buffers=0
         if max_empty_buffers<0:
             max_empty_buffers=0
@@ -149,6 +152,16 @@ class Telnet_Session:
             except:
                 break
         return data
+    
+    def just_execute(self,cmd):
+        if type(cmd) in [list,tuple,dict]:
+            cmd=json.dumps(cmd)
+        if type(cmd)==bytes:
+            cmd=cmd.decode()
+        cmd+=self.new_line
+        if type(cmd)==str:
+            cmd=cmd.encode()
+        self.sock.send(cmd)
     
     def ping(self):
         self.execute('')

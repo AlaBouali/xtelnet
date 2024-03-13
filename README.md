@@ -43,6 +43,8 @@ output1<span style="color: #333333">=</span>t<span style="color: #333333">.</spa
 <span style="color: #008800; font-weight: bold">print</span>(output1)
 output2<span style="color: #333333">=</span>t<span style="color: #333333">.</span>execute(<span style="background-color: #fff0f0">&#39;cd / &amp;&amp; ls&#39;</span>)
 <span style="color: #008800; font-weight: bold">print</span>(output2)
+output3<span style="color: #333333">=</span>t<span style="color: #333333">.</span>execute(<span style="background-color: #fff0f0">&#39;cd / &amp;&amp; ls&#39;</span>,read_until_match='expected_string_here')
+<span style="color: #008800; font-weight: bold">print</span>(output3)
 t<span style="color: #333333">.</span>close()<span style="color: #888888">#close the connection but keep the connection string to do reconnect later</span>
 t<span style="color: #333333">.</span>enable_debug()<span style="color: #888888"># enable debug mode</span>
 t<span style="color: #333333">.</span>disable_debug()<span style="color: #888888"># disable debug mode</span>
