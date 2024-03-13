@@ -1,4 +1,5 @@
 import socks,socket,ssl,re,json
+from .negotiations_flags import *
 
 class Socket_Connection:
 
@@ -44,9 +45,48 @@ class Socket_Connection:
             return Socket_Connection.wrap_socket_with_ssl(s,host)
         except:
             return
+    
+    @staticmethod
+    def parse_for_negotiations(connection,received_data,debug=False):
+        position=0
+        for byte in received_data:
+                #print(byte)
+                # Check if it's a negotiation command
+                if byte == ord(Negotiation_Flags.IAC):
+                    command = received_data[position+1]
+                    option = received_data[position+2]
+                    Socket_Connection.handle_negotiation(connection, command, option,debug=debug)
+                position+=1
+    
+    @staticmethod
+    def handle_negotiation(connection, command, option,debug=False):
+        if debug==True:
+            print('received negotiation: {} {}'.format(command,option))
+        if command == ord(Negotiation_Flags.DO):
+            # Server requests to enable an option
+            connection.sendall("{}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.WILL , option).encode())
+            if debug==True:
+                print("client negotiation response: {}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.WILL , option))
+        elif command == ord(Negotiation_Flags.DONT):
+            # Server requests to disable an option
+            connection.sendall("{}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.WONT , option).encode())
+            if debug==True:
+                print("client negotiation response: {}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.WONT , option))
+        elif command == ord(Negotiation_Flags.WILL):
+            # Server agrees to enable an option
+            connection.sendall("{}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.DO , option).encode())
+            if debug==True:
+                print("client negotiation response: {}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.DO , option))
+        elif command == ord(Negotiation_Flags.WONT):
+            # Server refuses to enable an option
+            connection.sendall("{}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.DONT , option).encode())
+            if debug==True:
+                print("client negotiation response: {}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.DONT , option))
+        #else:
+            #print('send nothing')
 
     @staticmethod
-    def send_data(connection,data,timeout=5,debug=False,new_line="\n",**kwargs):
+    def send_data(connection,data,timeout=5,debug=False,new_line="\n",enable_negotiation=False,**kwargs):
         if data!=None:
             if debug==True:
                     print("Sent: {}".format(Socket_Connection.escape_ansi(data)))
@@ -55,11 +95,13 @@ class Socket_Connection:
         data=b''
         while True:
             try:
-                d=connection.recv(1024)
+                d=connection.recv(4096)
                 if debug==True:
                     print("received: {}".format(Socket_Connection.escape_ansi(d)))
                 if d==b'':
                     break
+                if enable_negotiation==True:
+                    Socket_Connection.parse_for_negotiations(connection,d,debug=debug)
                 data+=d
             except Exception as ex:
                 #print(ex)
