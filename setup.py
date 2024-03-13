@@ -6,7 +6,7 @@ setuptools.setup(
     version="2.1.9",
     author="AlaBouali",
     author_email="ala.bouali.1997@gmail.com",
-    description="simple telnet module",
+    description="the best alternative to telnetlib as a telnet client",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/AlaBouali/xtelnet",
