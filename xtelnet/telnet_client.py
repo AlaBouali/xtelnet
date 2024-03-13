@@ -9,7 +9,7 @@ else:
 
 class Telnet_Session:
 
-    __slots__=['host','connection_configs','username','password','sock','debug','new_line','prompt','is_executing']
+    __slots__=['host','connection_configs','username','password','sock','debug','new_line','prompt','is_executing','is_connected']
 
     """
     use this function to generate connection configs for hosts when usin multiple sessions
@@ -38,11 +38,14 @@ class Telnet_Session:
         self.password=None
         self.new_line=None
         self.debug=None
+        self.is_connected=None
         self.prompt=None
         self.sock=None
 
     # if you are using "stupid" tcp servers, just set "allow_raw_tcp" to true and it will stream everything over TCP
     def connect(self,host,login_timeout=60,timeout=3,username='',allow_raw_tcp=False,password='',new_line='\n',debug=True,enable_negotiation=False,**kwargs):
+        if self.is_connected==True:
+            raise Exception('Already connected to : {}'.format(host))
         self.host=host
         self.connection_configs=kwargs
         self.username=username
@@ -57,6 +60,7 @@ class Telnet_Session:
         self.login(timeout=timeout,allow_raw_tcp=allow_raw_tcp,login_timeout=login_timeout,enable_negotiation=enable_negotiation)
     
     def login(self,timeout=5,allow_raw_tcp=False,login_timeout=60,enable_negotiation=False,**kwargs):
+        self.is_connected=True
         login_started_at=time.time()
         username_sent=False
         password_sent=False
@@ -168,6 +172,7 @@ class Telnet_Session:
 
     def close(self):
         self.sock.close()
+        self.is_connected=False
         self.sock=None
     
     def enable_debug(self):
@@ -181,6 +186,7 @@ class Telnet_Session:
         self.connection_configs=None
         self.username=None
         self.password=None
+        self.is_connected=None
         try:
             self.sock.close()
         except:

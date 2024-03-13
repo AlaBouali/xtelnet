@@ -52,7 +52,7 @@ class Socket_Connection:
         for byte in received_data:
                 #print(byte)
                 # Check if it's a negotiation command
-                if byte == ord(Negotiation_Flags.IAC):
+                if byte == ord(Negotiation_Flags.IAC) and received_data[position+1]!=ord(Negotiation_Flags.IAC):
                     command = received_data[position+1]
                     option = received_data[position+2]
                     Socket_Connection.handle_negotiation(connection, command, option,debug=debug)
