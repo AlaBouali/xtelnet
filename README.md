@@ -6,6 +6,8 @@ This is an easy to use telnet module to interact with a remote system smoothly o
 <ul>
   <li>Easy to use and stable</li>
   <li>Simple Authentication mechanism</li>
+  <li>Handle telnet negotiations automatically for you</li>
+  <li>parse commands output and returns only necessary output ( command's ouput, nothing extra )</li>
   <li>Compatible with almost all servers when it comes to authentication and executing the commands</li>
   <li>Available Command line tool</li>
   <li>Thread-safe: if the session is shared among threads to execute commands, the commands will be executed one by one</li>
