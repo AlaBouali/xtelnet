@@ -101,8 +101,12 @@ class Telnet_Session:
             if (any(i in prompt.lower() for i in user_prompts) == False) and (
                 any(i in prompt.lower() for i in password_prompts) == False
             ):
-                self.prompt=prompt
-                return
+                if any(i in prompt.lower() for i in prompt_end) == True:
+                    self.prompt=prompt
+                    return
+                else:
+                    self.destroy()
+                    raise Exception("Authentication Failed")
 
     def execute(self,cmd,timeout=3,read_until_match=None,buffer_read_timeout=2,remove_prompt_from_output=True,max_empty_buffers=1,enable_negotiation=False):
         """

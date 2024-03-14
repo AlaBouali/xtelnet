@@ -45,25 +45,21 @@ class Socket_Connection:
             return Socket_Connection.wrap_socket_with_ssl(s,host)
         except:
             return
+
     
     @staticmethod
     def parse_for_negotiations(connection,received_data,debug=False):
         position=0
-        negotiations_data=[Negotiation_Flags.IAC]
         for byte in received_data:
                 #print(byte)
                 # Check if it's a negotiation command
                 if byte == ord(Negotiation_Flags.IAC) and received_data[position+1]!=ord(Negotiation_Flags.IAC):
                     command = received_data[position+1]
                     option = received_data[position+2]
-                    if command not in negotiations_data:
-                        negotiations_data.append(command)
-                    if option not in negotiations_data:
-                        negotiations_data.append(option)
+                    #negotiations_data.append(received_data[position+2])
                     Socket_Connection.handle_negotiation(connection, command, option,debug=debug)
                 position+=1
-        for x in negotiations_data:
-            received_data=received_data.replace(x,'')
+        received_data=Socket_Connection.clean_telnet_data(received_data)
         return received_data
     
     @staticmethod
@@ -92,6 +88,17 @@ class Socket_Connection:
                 print("client negotiation response: {}{}{}".format(Negotiation_Flags.IAC + Negotiation_Flags.IAC , Negotiation_Flags.DONT , option))
         #else:
             #print('send nothing')
+    
+    def clean_telnet_data(data):
+        # Remove Telnet negotiations
+        telnet_pattern = re.compile(b'\xff[\xFA-\xFF].')
+        clean_data = telnet_pattern.sub(b'', data)
+
+        # Remove extra characters and escape sequences
+        cleaned_data = re.sub(b"b'|b\"|\\\\x..|\\r|\\n", b'', clean_data)
+        almost_clean= re.sub(b"''|\\\\x..|\\r|\\n|\\x08", b'', cleaned_data)
+        return re.sub(b"''|\\\\x..|\\r|\\n|\\x08|\\\\.", b'', almost_clean)
+
 
     @staticmethod
     def send_data(connection,data,timeout=5,debug=False,new_line="\n",enable_negotiation=False,**kwargs):
@@ -110,10 +117,13 @@ class Socket_Connection:
                     break
                 if enable_negotiation==True:
                     d=Socket_Connection.parse_for_negotiations(connection,d,debug=debug)
+                else:
+                    d=d
                 data+=d
             except Exception as ex:
-                #print(ex)
+                #raise(ex)
                 break
+        #print(data)
         return Socket_Connection.escape_ansi(data)
 
     @staticmethod
