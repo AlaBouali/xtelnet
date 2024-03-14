@@ -49,14 +49,22 @@ class Socket_Connection:
     @staticmethod
     def parse_for_negotiations(connection,received_data,debug=False):
         position=0
+        negotiations_data=[Negotiation_Flags.IAC]
         for byte in received_data:
                 #print(byte)
                 # Check if it's a negotiation command
                 if byte == ord(Negotiation_Flags.IAC) and received_data[position+1]!=ord(Negotiation_Flags.IAC):
                     command = received_data[position+1]
                     option = received_data[position+2]
+                    if command not in negotiations_data:
+                        negotiations_data.append(command)
+                    if option not in negotiations_data:
+                        negotiations_data.append(option)
                     Socket_Connection.handle_negotiation(connection, command, option,debug=debug)
                 position+=1
+        for x in negotiations_data:
+            received_data=received_data.replace(x,'')
+        return received_data
     
     @staticmethod
     def handle_negotiation(connection, command, option,debug=False):
@@ -101,7 +109,7 @@ class Socket_Connection:
                 if d==b'':
                     break
                 if enable_negotiation==True:
-                    Socket_Connection.parse_for_negotiations(connection,d,debug=debug)
+                    d=Socket_Connection.parse_for_negotiations(connection,d,debug=debug)
                 data+=d
             except Exception as ex:
                 #print(ex)
