@@ -77,31 +77,31 @@ class Telnet_Session:
             if time.time()-login_started_at>=login_timeout:
                 self.destroy()
                 raise Exception("Authentication Failed")
-            if any(i in prompt.lower() for i in enter_prompts) == True:
+            if any(i in prompt.lower() for i in Telnet_Prompts.enter) == True:
                 data=Socket_Connection.send_data(self.sock,data='',timeout=timeout,debug=self.debug,new_line='\r\n',enable_negotiation=enable_negotiation).strip()
                 prompt=data.split('\r\n')[-1]
                 # some anti-bot techniques requires sending "enter" after sending username/password
-            if any(i in prompt.lower() for i in user_prompts) == True:
+            if any(i in prompt.lower() for i in Telnet_Prompts.user) == True:
                 if username_sent==True:
                     self.destroy()
                     raise Exception("Authentication Failed")
                 data=Socket_Connection.send_data(self.sock,data=self.username,timeout=timeout,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
                 prompt=data.split('\r\n')[-1]
                 username_sent=True
-            if any(i in prompt.lower() for i in password_prompts) == True:
+            if any(i in prompt.lower() for i in Telnet_Prompts.password) == True:
                 if password_sent==True:
                     self.destroy()
                     raise Exception("Authentication Failed")
                 data=Socket_Connection.send_data(self.sock,data=self.password,timeout=timeout,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
                 prompt=data.split('\r\n')[-1]
                 password_sent=True
-            if any(i in prompt.lower() for i in fail_prompts) == True:
+            if any(i in prompt.lower() for i in Telnet_Prompts.fail) == True:
                 self.destroy()
                 raise Exception("Authentication Failed")
-            if (any(i in prompt.lower() for i in user_prompts) == False) and (
-                any(i in prompt.lower() for i in password_prompts) == False
+            if (any(i in prompt.lower() for i in Telnet_Prompts.user) == False) and (
+                any(i in prompt.lower() for i in Telnet_Prompts.password) == False
             ):
-                if any(i in prompt.lower() for i in prompt_end) == True:
+                if any(i in prompt.lower() for i in Telnet_Prompts.shell) == True:
                     self.prompt=prompt
                     return
                 else:
