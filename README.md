@@ -7,6 +7,7 @@ This is an easy to use telnet module to interact with a remote system smoothly o
   <li>Easy to use and stable</li>
   <li>Simple Authentication mechanism</li>
   <li>Handle telnet negotiations automatically for you</li>
+  <li>Compatible with python 2 and 3</li>
   <li>Set custom Telnet negotiation options</li>
   <li>parse commands output and returns only necessary output ( command's ouput, nothing extra )</li>
   <li>Compatible with almost all servers when it comes to authentication and executing the commands</li>
