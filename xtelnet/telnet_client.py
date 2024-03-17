@@ -9,7 +9,7 @@ else:
 
 class Telnet_Session:
 
-    __slots__=['host','connection_configs','username','password','sock','debug','new_line','prompt','is_executing','is_connected']
+    __slots__=['host','connection_configs','username','password','sock','debug','new_line','prompt','is_executing','is_connected','negotiation_options']
 
     """
     use this function to generate connection configs for hosts when usin multiple sessions
@@ -41,12 +41,19 @@ class Telnet_Session:
         self.is_connected=None
         self.prompt=None
         self.sock=None
+        self.negotiation_options={}
+
+    def set_negotiation_option(self,option,command):
+        if type(self.negotiation_options)!=dict:
+            self.negotiation_options={}
+        self.negotiation_options.update({option:command})
 
     # if you are using "stupid" tcp servers, just set "allow_raw_tcp" to true and it will stream everything over TCP
-    def connect(self,host,login_timeout=60,timeout=3,username='',allow_raw_tcp=False,password='',new_line='\n',debug=False,enable_negotiation=False,**kwargs):
+    def connect(self,host,login_timeout=60,timeout=3,negotiation_options={},username='',allow_raw_tcp=False,password='',new_line='\n',debug=False,enable_negotiation=False,**kwargs):
         if self.is_connected==True:
             raise Exception('Already connected to : {}'.format(host))
         self.host=host
+        self.negotiation_options=negotiation_options
         self.connection_configs=kwargs
         self.username=username
         self.password=password
@@ -64,7 +71,7 @@ class Telnet_Session:
         login_started_at=time.time()
         username_sent=False
         password_sent=False
-        data=Socket_Connection.send_data(self.sock,data=None,timeout=timeout,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
+        data=Socket_Connection.send_data(self.sock,data=None,negotiation_options=self.negotiation_options,timeout=timeout,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
         prompt=data.split('\r\n')[-1] 
         empty_data_reads=0
         if allow_raw_tcp==True:
@@ -78,21 +85,21 @@ class Telnet_Session:
                 self.destroy()
                 raise Exception("Authentication Failed")
             if any(i in prompt.lower() for i in Telnet_Prompts.enter) == True:
-                data=Socket_Connection.send_data(self.sock,data='',timeout=timeout,debug=self.debug,new_line='\r\n',enable_negotiation=enable_negotiation).strip()
+                data=Socket_Connection.send_data(self.sock,data='',timeout=timeout,negotiation_options=self.negotiation_options,debug=self.debug,new_line='\r\n',enable_negotiation=enable_negotiation).strip()
                 prompt=data.split('\r\n')[-1]
                 # some anti-bot techniques requires sending "enter" after sending username/password
             if any(i in prompt.lower() for i in Telnet_Prompts.user) == True:
                 if username_sent==True:
                     self.destroy()
                     raise Exception("Authentication Failed")
-                data=Socket_Connection.send_data(self.sock,data=self.username,timeout=timeout,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
+                data=Socket_Connection.send_data(self.sock,data=self.username,timeout=timeout,negotiation_options=self.negotiation_options,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
                 prompt=data.split('\r\n')[-1]
                 username_sent=True
             if any(i in prompt.lower() for i in Telnet_Prompts.password) == True:
                 if password_sent==True:
                     self.destroy()
                     raise Exception("Authentication Failed")
-                data=Socket_Connection.send_data(self.sock,data=self.password,timeout=timeout,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
+                data=Socket_Connection.send_data(self.sock,data=self.password,timeout=timeout,negotiation_options=self.negotiation_options,debug=self.debug,new_line=self.new_line,enable_negotiation=enable_negotiation).strip()
                 prompt=data.split('\r\n')[-1]
                 password_sent=True
             if any(i in prompt.lower() for i in Telnet_Prompts.fail) == True:
@@ -131,7 +138,7 @@ class Telnet_Session:
         empty_buffers=0
         if max_empty_buffers<0:
             max_empty_buffers=0
-        d=Socket_Connection.send_data(self.sock,cmd,timeout=timeout,new_line=self.new_line,debug=self.debug,enable_negotiation=enable_negotiation)
+        d=Socket_Connection.send_data(self.sock,cmd,timeout=timeout,negotiation_options=self.negotiation_options,new_line=self.new_line,debug=self.debug,enable_negotiation=enable_negotiation)
         data=d
         while True:
             if len(d)==0:
@@ -139,7 +146,7 @@ class Telnet_Session:
             #print(d)
             if empty_buffers>=max_empty_buffers:
                 break
-            d=Socket_Connection.send_data(self.sock,data=None,timeout=buffer_read_timeout,new_line=self.new_line,debug=self.debug,enable_negotiation=enable_negotiation)
+            d=Socket_Connection.send_data(self.sock,data=None,negotiation_options=self.negotiation_options,timeout=buffer_read_timeout,new_line=self.new_line,debug=self.debug,enable_negotiation=enable_negotiation)
             data+=d
         self.is_executing=False
         if remove_prompt_from_output==False:
@@ -191,6 +198,7 @@ class Telnet_Session:
         self.username=None
         self.password=None
         self.is_connected=None
+        self.negotiation_options=None
         try:
             self.sock.close()
         except:
